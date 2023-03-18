@@ -29,3 +29,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 ```
+
+# Bash/Zsh completion
+Just run `source ./share/bash_completion ./build/clice-demo` and enjoy the
+tab-completion when running `./build/clice-demo` programs.
