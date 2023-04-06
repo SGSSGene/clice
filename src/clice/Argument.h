@@ -17,10 +17,13 @@
 
 namespace clice {
 
+inline std::string argv0; // Parser will fill this
+
 struct ArgumentBase {
     ArgumentBase* parent{};
     std::string   arg;
     std::string   desc;
+    std::optional<std::vector<std::string>> mapping;
     std::vector<std::string> tags;
     std::optional<std::string> completion;
     std::vector<ArgumentBase*> arguments; // child parameters
@@ -113,8 +116,15 @@ struct Argument {
 
     struct CTor {
         ArgumentBase arg;
+        static auto detectType() -> std::type_index {
+            if constexpr (std::is_invocable_v<T>) {
+                // Get the type_index of a lambda
+                return std::type_index(typeid(std::invoke_result_t<T>));
+            }
+            return std::type_index(typeid(T));
+        };
         CTor(Argument& desc)
-            : arg{desc.parent?&desc.parent->storage.arg:nullptr, std::type_index(typeid(T))}
+            : arg{desc.parent?&desc.parent->storage.arg:nullptr, detectType()}
         {
             arg.arg  = desc.arg;
             arg.desc = desc.desc;
@@ -126,6 +136,13 @@ struct Argument {
                     str += key + "\n";
                 }
                 arg.completion = str;
+            }
+            if (desc.mapping) {
+                auto v = std::vector<std::string>{};
+                for (auto const& [key, value] : *desc.mapping) {
+                    v.push_back(key);
+                }
+                arg.mapping = v;
             }
             arg.tags = desc.tags;
             arg.init = [&]() {
@@ -155,7 +172,7 @@ struct Argument {
                     };
                 } else if constexpr (std::is_invocable_v<T>) {
                     arg.fromString = [&](std::string_view s) {
-                        using RT = std::decay_t<decltype(desc.value())>;
+                        using RT = std::invoke_result_t<T>;
                         desc.anyType = parseFromString<RT>(s);
                     };
 

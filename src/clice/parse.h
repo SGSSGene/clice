@@ -1,12 +1,14 @@
 #pragma once
 
 #include "Argument.h"
+
+#include <cassert>
 #include <fmt/format.h>
-#include <iostream>
 
 namespace clice {
 
 inline auto parse(int argc, char const* const* argv) -> std::optional<std::string> {
+    assert(argc > 0);
     std::vector<ArgumentBase*> activeBases;
 
     auto completion = std::getenv("CLICE_COMPLETION") != nullptr;
@@ -30,6 +32,7 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
     };
 
 
+    clice::argv0 = argv[0];
     bool allTrailing = false;
     for (int i{1}; i < argc; ++i) {
         // make suggestion about next possible tokens
