@@ -10,6 +10,8 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <typeinfo>
+#include <typeindex>
 #include <unordered_set>
 #include <vector>
 
@@ -21,20 +23,20 @@ struct ArgumentBase {
     std::string   desc;
     std::vector<std::string> tags;
     std::optional<std::string> completion;
+    std::vector<ArgumentBase*> arguments; // child parameters
+    std::type_index type_index;
 
     std::function<void()> init;
     std::function<void(std::string_view)> fromString;
     std::function<void()> cb;
 
     ArgumentBase() = delete;
-    ArgumentBase(ArgumentBase* parent);
+    ArgumentBase(ArgumentBase* parent, std::type_index idx);
     virtual ~ArgumentBase();
     ArgumentBase(ArgumentBase const&) = delete;
     ArgumentBase(ArgumentBase&&) = delete;
     auto operator=(ArgumentBase const&) -> ArgumentBase& = delete;
     auto operator=(ArgumentBase&&) -> ArgumentBase& = delete;
-
-    std::vector<ArgumentBase*> arguments;
 };
 
 struct Register {
@@ -46,8 +48,9 @@ struct Register {
     }
 };
 
-inline ArgumentBase::ArgumentBase(ArgumentBase* parent)
+inline ArgumentBase::ArgumentBase(ArgumentBase* parent, std::type_index idx)
     : parent{parent}
+    , type_index{idx}
 {
     if (parent) {
         parent->arguments.push_back(this);
@@ -65,7 +68,6 @@ ArgumentBase::~ArgumentBase() {
         arguments.erase(std::remove(arguments.begin(), arguments.end(), this), arguments.end());
     }
 }
-
 
 template <typename T = nullptr_t, typename T2 = nullptr_t>
 struct Argument {
@@ -112,7 +114,7 @@ struct Argument {
     struct CTor {
         ArgumentBase arg;
         CTor(Argument& desc)
-            : arg{desc.parent?&desc.parent->storage.arg:nullptr}
+            : arg{desc.parent?&desc.parent->storage.arg:nullptr, std::type_index(typeid(T))}
         {
             arg.arg  = desc.arg;
             arg.desc = desc.desc;

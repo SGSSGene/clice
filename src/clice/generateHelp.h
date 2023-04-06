@@ -26,7 +26,6 @@ inline auto generateHelp() -> std::string {
             ret = ret + fmt::format("{}{:<{}}    - {}\n", ind, arg->arg, longestWord, arg->desc);
             f(arg->arguments, ind + "  ");
         }
-
     };
     f(args, "");
     return ret;
