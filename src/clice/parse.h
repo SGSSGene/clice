@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Argument.h"
+#include "printCompletion.h"
 
 #include <cassert>
 #include <fmt/format.h>
@@ -9,6 +10,13 @@ namespace clice {
 
 inline auto parse(int argc, char const* const* argv) -> std::optional<std::string> {
     assert(argc > 0);
+    clice::argv0 = argv[0];
+
+    if (auto gen = std::getenv("CLICE_GENERATE_COMPLETION"); gen != nullptr) {
+        printCompletion(gen);
+        exit(0);
+    }
+
     std::vector<ArgumentBase*> activeBases;
 
     auto completion = std::getenv("CLICE_COMPLETION") != nullptr;
@@ -32,7 +40,6 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
     };
 
 
-    clice::argv0 = argv[0];
     bool allTrailing = false;
     for (int i{1}; i < argc; ++i) {
         // make suggestion about next possible tokens
@@ -90,20 +97,22 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
             throw std::runtime_error{std::string{"unexpected cli argument \""} + argv[i] + "\""};
         }();
     }
-    // trigger all callbacks
-    if (!completion) {
-        auto& args = clice::Register::getInstance().arguments;
-        auto f = std::function<void(std::vector<clice::ArgumentBase*>)>{};
-        f = [&](auto const& args) {
-            for (auto arg : args) {
-                if (arg->cb) {
-                    arg->cb();
-                }
-                f(arg->arguments);
-            }
-        };
-        f(args);
+    if (completion) {
+        exit(0);
     }
+
+    // trigger all callbacks
+    auto& args = clice::Register::getInstance().arguments;
+    auto f = std::function<void(std::vector<clice::ArgumentBase*>)>{};
+    f = [&](auto const& args) {
+        for (auto arg : args) {
+            if (arg->cb) {
+                arg->cb();
+            }
+            f(arg->arguments);
+        }
+    };
+    f(args);
 
 
     return std::nullopt;
