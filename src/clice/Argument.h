@@ -62,7 +62,7 @@ inline ArgumentBase::ArgumentBase(ArgumentBase* parent, std::type_index idx)
     }
 }
 
-ArgumentBase::~ArgumentBase() {
+inline ArgumentBase::~ArgumentBase() {
     if (parent) {
         auto& arguments = parent->arguments;
         arguments.erase(std::remove(arguments.begin(), arguments.end(), this), arguments.end());
