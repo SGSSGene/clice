@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
         std::cout << "  --uint64 " << cliBTUInt64 << " " << *cliBTUInt64 << "\n";
         std::cout << "  --int64 " << cliBTInt64 << " " << *cliBTInt64 << "\n";
         std::cout << "  --char " << cliBTChar << " " << *cliBTChar << "\n";
-        std::cout << "  --string " << cliBTString << " " << *cliBTString << "\n";
+        std::cout << "  --string " << cliBTString << " " << *cliBTString << " has len " << cliBTString->size() << "\n";
         std::cout << "  --mapped_bool " << cliBTMappedBool << " " << *cliBTMappedBool << "\n";
         std::cout << "  --enum " << cliBTEnum << " " << (*cliBTEnum==MyEnumType::Foo?"foo":"bar") << "\n";
         std::cout << "  --input " << cliBTInputPath << " " << *cliBTInputPath << "\n";

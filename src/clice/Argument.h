@@ -94,7 +94,7 @@ struct Argument {
             if (!anyType.has_value()) {
                 anyType = value();
             }
-            return std::any_cast<R>(anyType);
+            return *std::any_cast<R>(&anyType);
         } else if constexpr (std::same_as<T, nullptr_t>) {
             []<bool type_available = false> {
                 static_assert(type_available, "Can't dereference a flag");
@@ -105,7 +105,8 @@ struct Argument {
     }
 
     auto operator->() const -> auto const* {
-        return &**this;
+        auto const& r = **this;
+        return &r;
     }
 
     template <typename CB>
