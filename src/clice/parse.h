@@ -23,7 +23,8 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
 
     auto findRootArg = [&](std::string_view str) -> ArgumentBase* {
         for (auto arg : Register::getInstance().arguments) {
-            if (arg->arg == str and arg->init) {
+            auto iter = std::find(arg->args.begin(), arg->args.end(), str);
+            if (iter != arg->args.end() and arg->init) {
                 return arg;
             }
         }
@@ -32,7 +33,8 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
 
     auto findActiveArg = [&](std::string_view str, ArgumentBase* base) -> ArgumentBase* {
         for (auto arg : base->arguments) {
-            if (arg->arg == str and arg->init) {
+            auto iter = std::find(arg->args.begin(), arg->args.end(), str);
+            if (iter != arg->args.end() and arg->init) {
                 return arg;
             }
         }
@@ -52,11 +54,15 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
             auto options = std::vector<std::tuple<std::string, std::string>>{};
             for (auto bases : activeBases) {
                 for (auto arg : bases->arguments) {
-                    options.emplace_back(arg->arg, arg->desc);
+                    if (!arg->args.empty()) {
+                        options.emplace_back(arg->args[0], arg->desc);
+                    }
                 }
             }
             for (auto arg : Register::getInstance().arguments) {
-                    options.emplace_back(arg->arg, arg->desc);
+                if (!arg->args.empty()) {
+                    options.emplace_back(arg->args[0], arg->desc);
+                }
             }
             size_t longestWord = {};
             for (auto const& [arg, desc] : options) {
