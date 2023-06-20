@@ -30,6 +30,24 @@ auto cliAuto    = clice::Argument{ .args   = "--auto",
                                         std::cout << "done\n";
                                    }
                                  };
+auto cliAuto2   = clice::Argument{ .args   = "--auto2",
+                                   .desc   = "same as --auto, but with lower priority",
+                                   .value  = []() { return *cliNbr+1; },
+                                   .cb     = []() {
+                                        std::cout << "auto2 done, after auto\n";
+                                   },
+                                   .cb_priority = 200,
+                                 };
+
+auto cliAuto3   = clice::Argument{ .args   = "--auto3",
+                                   .desc   = "same as --auto, but with higher priority",
+                                   .value  = []() { return *cliNbr+1; },
+                                   .cb     = []() {
+                                        std::cout << "auto3 done, before auto\n";
+                                   },
+                                   .cb_priority = 50,
+                                 };
+
 auto cliBasicTypes = clice::Argument{ .args = "basic",
                                       .desc = "basic values like bool, ints and doubles",
                                     };
@@ -146,7 +164,7 @@ int main(int argc, char** argv) {
         for (auto i : *cliInts) {
             std::cout << " - " << i << "\n";
         }
-        std::cout << "auto: " << *cliAuto << "\n";
+        std::cout << "auto: " << *cliAuto << " " << *cliAuto2 << " " << *cliAuto3 << "\n";
 
         std::cout << "\n\nbasic " << cliBasicTypes << "\n";
         std::cout << "  --flag " << cliBTFlag << " " << "\n";

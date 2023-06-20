@@ -32,6 +32,7 @@ struct ArgumentBase {
     std::function<void()> init;
     std::function<void(std::string_view)> fromString;
     std::function<void()> cb;
+    size_t                cb_priority;
 
     ArgumentBase() = delete;
     ArgumentBase(ArgumentBase* parent, std::type_index idx);
@@ -93,6 +94,7 @@ struct Argument {
     T value{};
     mutable std::any anyType; // used if T is a callback
     std::function<void()> cb;
+    size_t                cb_priority{100}; // lower priorities will be triggered before larger ones
     std::optional<std::unordered_map<std::string, T>> mapping;
     std::vector<std::string> tags;
 
@@ -161,6 +163,7 @@ struct Argument {
             arg.init = [&]() {
                 desc.isSet = true;
                 arg.cb = desc.cb;
+                arg.cb_priority = desc.cb_priority;
                 if constexpr (std::same_as<nullptr_t, T>) {
                 } else if constexpr (std::is_arithmetic_v<T>
                                      || std::same_as<std::string, T>

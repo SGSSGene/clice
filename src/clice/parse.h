@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <fmt/format.h>
+#include <map>
 
 namespace clice {
 
@@ -107,19 +108,27 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
         exit(0);
     }
 
-    // trigger all callbacks
+    // create list of all triggers according to priority
     auto& args = clice::Register::getInstance().arguments;
+    auto triggers = std::map<size_t, std::vector<std::function<void()>>>{};
     auto f = std::function<void(std::vector<clice::ArgumentBase*>)>{};
     f = [&](auto const& args) {
         for (auto arg : args) {
             if (arg->cb) {
-                arg->cb();
+                triggers[arg->cb_priority].emplace_back([=]() {
+                    arg->cb();
+                });
             }
             f(arg->arguments);
         }
     };
     f(args);
-
+    // call triggers in priority level order
+    for (auto const& [level, cbs] : triggers) {
+        for (auto const& cb : cbs) {
+            cb();
+        }
+    }
 
     return std::nullopt;
 }
