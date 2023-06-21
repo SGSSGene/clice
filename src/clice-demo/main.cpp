@@ -146,12 +146,24 @@ auto cliBTOption    = clice::Argument{ .parent = &cliBasicTypes,
                                        .desc   = "option can be set in two different ways",
                                        .value  = int{},
                                      };
-
 }
+
+auto cliSingleDash = clice::Argument{ .args = "single_dash",
+                                      .desc   = "single dash grouping",
+};
+auto cliSD_a       = clice::Argument{ .parent = &cliSingleDash,
+                                      .args   = "-a",
+                                      .desc   = "some a",
+};
+auto cliSD_b       = clice::Argument{ .parent = &cliSingleDash,
+                                      .args   = "-b",
+                                      .desc   = "some b",
+};
+
 
 int main(int argc, char** argv) {
     try {
-        if (auto failed = clice::parse(argc, argv); failed) {
+        if (auto failed = clice::parse(argc, argv, /*.allowDashCombi=*/true); failed) {
             std::cerr << "parsing failed: " << *failed << "\n";
             return 1;
         }
@@ -185,6 +197,9 @@ int main(int argc, char** argv) {
         std::cout << "  --output " << cliBTOutputPath << " " << *cliBTOutputPath << "\n";
         std::cout << "  --vector_int " << cliBTVectorInt << " " << cliBTVectorInt->size() << "\n";
         std::cout << "  --option1, --option2 " << cliBTOption << " " << *cliBTOption << "\n";
+        std::cout << "\n\nsingle dash " << cliSingleDash << "\n";
+        std::cout << "  -a " << cliSD_a << "\n";
+        std::cout << "  -b " << cliSD_b << "\n";
         for (auto x : *cliBTVectorInt) {
             std::cout << "    " << x << "\n";
         }

@@ -5,11 +5,80 @@
 
 #include <cassert>
 #include <fmt/format.h>
+#include <list>
 #include <map>
+#include <span>
 
 namespace clice {
 
-inline auto parse(int argc, char const* const* argv) -> std::optional<std::string> {
+namespace {
+inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBases, std::string_view arg) {
+    // single completion
+    if (activeBases.size() and activeBases.back()->fromString and activeBases.back()->completion and (arg.empty() || arg[0] != '-')) {
+        fmt::print("{}", *activeBases.back()->completion);
+        return;
+    }
+    auto options = std::vector<std::tuple<std::string, std::string>>{};
+    for (auto bases : activeBases) {
+        for (auto arg : bases->arguments) {
+            if (!arg->args.empty()) {
+                options.emplace_back(arg->args[0], arg->desc);
+            }
+        }
+    }
+    for (auto arg : Register::getInstance().arguments) {
+        if (!arg->args.empty()) {
+            options.emplace_back(arg->args[0], arg->desc);
+        }
+    }
+    size_t longestWord = {};
+    for (auto const& [arg, desc] : options) {
+        longestWord = std::max(longestWord, arg.size());
+    }
+    //!TODO maybe we also want to show descriptions?
+
+    std::ranges::sort(options);
+    for (auto const& [arg, desc] : options) {
+        fmt::print("{}\n", arg);
+    }
+}
+}
+
+auto parse(int argc, char const* const* argv, bool allowSingleDash = false) -> std::optional<std::string>;
+
+auto parseSingleDash(int _argc, char const* const* _argv) -> std::optional<std::string> {
+    auto args   = std::list<std::string>{};
+    auto argptr = std::vector<char const*>{};
+    bool allTrailing{false};
+    for (int i{0}; i < _argc; ++i) {
+        auto view = std::string_view{_argv[i]};
+        if (allTrailing
+            || view.size() <= 2
+            || view[0] != '-'
+            || view[1] == '-'
+        ) {
+            argptr.push_back(_argv[i]);
+            if (view == "--") {
+                allTrailing = true;
+            }
+        } else {
+            for (size_t j{1}; j < view.size(); ++j) {
+                args.push_back(std::string{"-"} + view[j]);
+                argptr.push_back(args.back().c_str());
+            }
+        }
+    }
+    return parse(argptr.size(), argptr.data(), false);
+}
+
+
+/**
+ * allowSingleDash: allows flags like "-a -b" be combined to "-ab"
+ */
+inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> std::optional<std::string> {
+    if (allowSingleDash) {
+        return parseSingleDash(argc, argv);
+    }
     assert(argc > 0);
     clice::argv0 = argv[0];
 
@@ -18,7 +87,7 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
         exit(0);
     }
 
-    std::vector<ArgumentBase*> activeBases;
+    auto activeBases = std::vector<ArgumentBase*>{}; // current commands whos sub arguments are of interest;
 
     auto completion = std::getenv("CLICE_COMPLETION") != nullptr;
 
@@ -47,34 +116,7 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
     for (int i{1}; i < argc; ++i) {
         // make suggestion about next possible tokens
         if (completion and i+1 == argc) {
-            // single completion
-            if (activeBases.size() and activeBases.back()->fromString and activeBases.back()->completion and (strlen(argv[i]) != 0 || argv[i][0] != '-')) {
-                fmt::print("{}", *activeBases.back()->completion);
-                continue;
-            }
-            auto options = std::vector<std::tuple<std::string, std::string>>{};
-            for (auto bases : activeBases) {
-                for (auto arg : bases->arguments) {
-                    if (!arg->args.empty()) {
-                        options.emplace_back(arg->args[0], arg->desc);
-                    }
-                }
-            }
-            for (auto arg : Register::getInstance().arguments) {
-                if (!arg->args.empty()) {
-                    options.emplace_back(arg->args[0], arg->desc);
-                }
-            }
-            size_t longestWord = {};
-            for (auto const& [arg, desc] : options) {
-                longestWord = std::max(longestWord, arg.size());
-            }
-            //!TODO maybe we also want to show descriptions?
-
-            std::ranges::sort(options);
-            for (auto const& [arg, desc] : options) {
-                fmt::print("{}\n", arg);
-            }
+            makeCompletionSuggestion(activeBases, std::string_view{argv[i]});
             continue;
         }
         if (std::string_view{argv[i]} == "--" and !allTrailing) {
@@ -83,6 +125,7 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
         }
 
         [&]() {
+            // walk up the arguments, until one active argument has a child with fitting parameter
             while (activeBases.size()) {
                 if ((argv[i][0] != '-' or allTrailing) and activeBases.back()->fromString) {
                     activeBases.back()->fromString(argv[i]);
@@ -109,7 +152,6 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
     }
 
     // create list of all triggers according to priority
-    auto& args = clice::Register::getInstance().arguments;
     auto triggers = std::map<size_t, std::vector<std::function<void()>>>{};
     auto f = std::function<void(std::vector<clice::ArgumentBase*>)>{};
     f = [&](auto const& args) {
@@ -122,7 +164,7 @@ inline auto parse(int argc, char const* const* argv) -> std::optional<std::strin
             f(arg->arguments);
         }
     };
-    f(args);
+    f(clice::Register::getInstance().arguments);
     // call triggers in priority level order
     for (auto const& [level, cbs] : triggers) {
         for (auto const& cb : cbs) {
