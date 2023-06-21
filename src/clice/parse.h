@@ -126,17 +126,17 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
 
         [&]() {
             // walk up the arguments, until one active argument has a child with fitting parameter
-            while (activeBases.size()) {
-                if ((argv[i][0] != '-' or allTrailing) and activeBases.back()->fromString) {
-                    activeBases.back()->fromString(argv[i]);
+            for (size_t j{0}; j < activeBases.size(); ++j) {
+                auto const& base = activeBases[activeBases.size()-j-1];
+                if ((argv[i][0] != '-' or allTrailing) and base->fromString) {
+                    base->fromString(argv[i]);
                     return;
                 }
-                if (auto arg = findActiveArg(argv[i], activeBases.back()); arg) {
+                if (auto arg = findActiveArg(argv[i], base); arg) {
                     arg->init();
                     activeBases.push_back(arg);
                     return;
                 }
-                activeBases.pop_back();
             }
             auto arg = findRootArg(argv[i]);
             if (arg) {
