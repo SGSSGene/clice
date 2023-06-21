@@ -46,7 +46,7 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
 
 auto parse(int argc, char const* const* argv, bool allowSingleDash = false) -> std::optional<std::string>;
 
-auto parseSingleDash(int _argc, char const* const* _argv) -> std::optional<std::string> {
+inline auto parseSingleDash(int _argc, char const* const* _argv) -> std::optional<std::string> {
     auto args   = std::list<std::string>{};
     auto argptr = std::vector<char const*>{};
     bool allTrailing{false};
