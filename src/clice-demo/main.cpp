@@ -9,6 +9,7 @@ auto cliHelp    = clice::Argument{ .args   = "--help",
                                  };
 
 auto cliAdd     = clice::Argument{ .args   = "add",
+                                   .symlink = true, // allows access via symlink to clice-demo-add
                                    .desc   = "adds some stuff",
                                  };
 auto cliVerbose = clice::Argument{ .parent = &cliAdd,
