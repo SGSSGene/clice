@@ -79,8 +79,24 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
     if (allowSingleDash) {
         return parseSingleDash(argc, argv);
     }
+
     assert(argc > 0);
     clice::argv0 = argv[0];
+
+    // check for symlink (only root arguments are considered)
+    auto redirectedArguments = std::vector<char const*>{};
+    for (auto arg : Register::getInstance().arguments) {
+        if (arg->symlink and std::filesystem::path{argv0}.filename().string().ends_with("-" + arg->args[0])) {
+            redirectedArguments.push_back(argv[0]);
+            redirectedArguments.push_back(arg->args[0].c_str());
+            for (auto i{1}; i < argc; ++i) {
+                redirectedArguments.push_back(argv[i]);
+            }
+            redirectedArguments.push_back(nullptr);
+            argc = redirectedArguments.size()-1;
+            argv = redirectedArguments.data();
+        }
+    }
 
     if (auto gen = std::getenv("CLICE_GENERATE_COMPLETION"); gen != nullptr) {
         printCompletion(gen);

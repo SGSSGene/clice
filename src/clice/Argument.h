@@ -27,6 +27,7 @@ struct ArgumentBase {
     std::vector<std::string>   tags;
     std::optional<std::string> completion;
     std::vector<ArgumentBase*> arguments; // child parameters
+    bool                       symlink;   // a symlink for example to "slix-env" should actually call "slix env"
     std::type_index            type_index;
 
     std::function<void()> init;
@@ -89,6 +90,7 @@ template <typename T = nullptr_t, typename T2 = nullptr_t>
 struct Argument {
     Argument<T2>* parent{};
     ListOfStrings args;
+    bool          symlink;
     std::string desc;
     bool isSet{};
     T value{};
@@ -141,8 +143,9 @@ struct Argument {
         CTor(Argument& desc)
             : arg{desc.parent?&desc.parent->storage.arg:nullptr, detectType()}
         {
-            arg.args = desc.args;
-            arg.desc = desc.desc;
+            arg.args    = desc.args;
+            arg.symlink = desc.symlink;
+            arg.desc    = desc.desc;
             if constexpr (std::same_as<std::filesystem::path, T>) {
                 arg.completion = " -f ";
             } else if (desc.mapping) {
