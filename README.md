@@ -19,10 +19,6 @@ int main(int argc, char** argv) {
         std::cerr << "parsing failed: " << *failed << "\n";
         return 1;
     }
-    if (auto ptr = std::getenv("CLICE_COMPLETION"); ptr) {
-        return 0;
-    }
-
 
     std::cout << cliAdd << "\n";
     std::cout << "  " << cliVerbose << "\n";
