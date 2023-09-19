@@ -32,7 +32,8 @@ struct ArgumentBase {
     std::vector<ArgumentBase*>              children;
 
     std::function<void()> init;
-    std::function<void(std::string_view)> fromString;
+    std::function<void(std::string_view)>       fromString;
+    std::function<std::optional<std::string>()> toString;
     std::function<void()> cb;
     size_t                cb_priority;
 
@@ -207,6 +208,45 @@ struct Argument {
                     }();
                 }
             };
+            arg.toString = [&]() -> std::optional<std::string> {
+                auto reverseMapping = [&](auto v) -> std::string {
+                    for (auto const& [key, value] : *desc.mapping) {
+                        if (value == v) return key;
+                    }
+                    return "unknown";
+                };
+
+                if constexpr (std::same_as<nullptr_t, T>) {
+                    return std::nullopt;
+                } else if constexpr (std::same_as<bool, T>) {
+                    if (desc.mapping) return reverseMapping(desc.value);
+                    return desc.value?"true":"false";
+                } else if constexpr (std::is_arithmetic_v<T>) {
+                    if (desc.mapping) return reverseMapping(desc.value);
+                    return std::to_string(desc.value);
+                } else if constexpr (std::same_as<std::string, T>) {
+                    if (desc.mapping) return reverseMapping(desc.value);
+                    if (desc.value.empty()) return "\"\"";
+                    return desc.value;
+                } else if constexpr (std::same_as<std::filesystem::path, T>) {
+                    if (desc.mapping) return reverseMapping(desc.value);
+                    if (desc.value.string() == "") return "\"\"";
+                    return desc.value.string();
+                } else if constexpr (std::is_enum_v<T>) {
+                    if (desc.mapping) return reverseMapping(desc.value);
+                    using UT = std::underlying_type_t<T>;
+                    return std::to_string(static_cast<UT>(desc.value));
+                } else if constexpr (HasPushBack) {
+                    return std::nullopt;
+                } else if constexpr (std::is_invocable_v<T>) {
+                    return std::nullopt;
+                } else {
+                    []<bool type_available = false> {
+                        static_assert(type_available, "Type can't be used as a value type in clice::Argument");
+                    }();
+                }
+            };
+
         }
     } storage{*this};
 };
