@@ -76,7 +76,7 @@ auto parseFromString(std::string_view _str) -> T {
         char const* strEnd   = str.data() + str.size();
         std::size_t nextIdx=0;
         if (str.find("0b") == 0) {
-            base=2;
+            base = 2;
             strBegin += 2;
         }
         try {
