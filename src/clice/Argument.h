@@ -20,15 +20,16 @@ namespace clice {
 inline std::string argv0; // Parser will fill this
 
 struct ArgumentBase {
-    ArgumentBase*            parent{};
-    std::vector<std::string> args;
-    std::string              desc;
+    ArgumentBase*                           parent{};
+    std::vector<std::string>                args;
+    std::string                             desc;
     std::optional<std::vector<std::string>> mapping;
-    std::vector<std::string>   tags;
-    std::optional<std::string> completion;
-    std::vector<ArgumentBase*> arguments; // child parameters
-    bool                       symlink;   // a symlink for example to "slix-env" should actually call "slix env"
-    std::type_index            type_index;
+    std::unordered_set<std::string>         tags;
+    std::optional<std::string>              completion;
+    std::vector<ArgumentBase*>              arguments; // child parameters
+    bool                                    symlink;   // a symlink for example to "slix-env" should actually call "slix env"
+    std::type_index                         type_index;
+    std::vector<ArgumentBase*>              children;
 
     std::function<void()> init;
     std::function<void(std::string_view)> fromString;
@@ -88,17 +89,17 @@ struct ListOfStrings : std::vector<std::string> {
 
 template <typename T = nullptr_t, typename T2 = nullptr_t>
 struct Argument {
-    Argument<T2>* parent{};
-    ListOfStrings args;
-    bool          symlink;
-    std::string desc;
-    bool isSet{};
-    T value{};
-    mutable std::any anyType; // used if T is a callback
+    Argument<T2>*         parent{};
+    ListOfStrings         args;
+    bool                  symlink;
+    std::string           desc;
+    bool                  isSet{};
+    T                     value{};
+    mutable std::any      anyType; // used if T is a callback
     std::function<void()> cb;
-    size_t                cb_priority{100}; // lower priorities will be triggered before larger ones
+    size_t                                            cb_priority{100}; // lower priorities will be triggered before larger ones
     std::optional<std::unordered_map<std::string, T>> mapping;
-    std::vector<std::string> tags;
+    std::unordered_set<std::string>                   tags;  // known tags "required"
 
     operator bool() const {
         return isSet;
@@ -141,8 +142,11 @@ struct Argument {
             return std::type_index(typeid(T));
         };
         CTor(Argument& desc)
-            : arg{desc.parent?&desc.parent->storage.arg:nullptr, detectType()}
+            : arg { desc.parent?&desc.parent->storage.arg:nullptr, detectType()}
         {
+            if (arg.parent) {
+                arg.parent->children.push_back(&arg);
+            }
             arg.args    = desc.args;
             arg.symlink = desc.symlink;
             arg.desc    = desc.desc;
@@ -163,6 +167,10 @@ struct Argument {
                 arg.mapping = v;
             }
             arg.tags = desc.tags;
+            constexpr bool HasPushBack = requires {{ std::declval<T>().push_back(std::declval<typename T::value_type>()) }; };
+            if (HasPushBack && !std::same_as<std::string, T> && !std::same_as<std::filesystem::path, T>) {
+                arg.tags.insert("multi");
+            }
             arg.init = [&]() {
                 desc.isSet = true;
                 arg.cb = desc.cb;
@@ -180,21 +188,19 @@ struct Argument {
                         }
                         arg.fromString = nullptr;
                     };
-                } else if constexpr (requires {{ std::declval<T>().push_back(std::declval<typename T::value_type>()) }; }) {
+                } else if constexpr (HasPushBack) {
                     arg.fromString = [&](std::string_view s) {
                         if (desc.mapping) {
                             throw std::runtime_error("Type can't use mapping");
                         } else {
                             desc.value.push_back(parseFromString<typename T::value_type>(s));
                         }
-
                     };
                 } else if constexpr (std::is_invocable_v<T>) {
                     arg.fromString = [&](std::string_view s) {
                         using RT = std::invoke_result_t<T>;
                         desc.anyType = parseFromString<RT>(s);
                     };
-
                 } else {
                     []<bool type_available = false> {
                         static_assert(type_available, "Type can't be used as a value type in clice::Argument");

@@ -144,7 +144,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
             // walk up the arguments, until one active argument has a child with fitting parameter
             for (size_t j{0}; j < activeBases.size(); ++j) {
                 auto const& base = activeBases[activeBases.size()-j-1];
-                if ((argv[i][0] != '-' or allTrailing) and base->fromString) {
+                if ((argv[i][0] != '-' or allTrailing or !base->tags.contains("multi")) and base->fromString) {
                     base->fromString(argv[i]);
                     return;
                 }
@@ -152,6 +152,14 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
                     arg->init();
                     activeBases.push_back(arg);
                     return;
+                }
+                if (!base->tags.contains("multi") && base->fromString) {
+                    auto param = std::string{};
+                    for (auto const& a : base->args) {
+                        param += a + ", ";
+                    }
+                    param.pop_back(); param.pop_back();
+                    throw std::runtime_error{"option \"" + param + "\" is missing a value"};
                 }
             }
             auto arg = findRootArg(argv[i]);
@@ -166,6 +174,39 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
     if (completion) {
         exit(0);
     }
+
+    // check if all arguments got parameters
+    for (size_t j{0}; j < activeBases.size(); ++j) {
+        auto const& base = activeBases[activeBases.size()-j-1];
+        if (!base->tags.contains("multi") && base->fromString) {
+            auto param = std::string{};
+            for (auto const& a : base->args) {
+                param += a + ", ";
+            }
+            param.pop_back(); param.pop_back();
+            throw std::runtime_error{"option \"" + param + "\" is missing a value"};
+        }
+        for (auto child : base->children) {
+            if (child->tags.contains("required")) {
+                if (std::ranges::find(activeBases, child) == activeBases.end()) {
+                    auto option = std::string{};
+                    for (auto const& a : base->args) {
+                        option += a + ", ";
+                    }
+                    option.pop_back(); option.pop_back();
+
+                    auto suboption = std::string{};
+                    for (auto const& a : child->args) {
+                        suboption += a + ", ";
+                    }
+                    suboption.pop_back(); suboption.pop_back();
+
+                    throw std::runtime_error{"option \"" + suboption + "\" is required (enforced by \"" + option + "\")"};
+                }
+            }
+        }
+    }
+
 
     // create list of all triggers according to priority
     auto triggers = std::map<size_t, std::vector<std::function<void()>>>{};

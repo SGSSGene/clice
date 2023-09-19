@@ -161,6 +161,22 @@ auto cliSD_b       = clice::Argument{ .parent = &cliSingleDash,
                                       .desc   = "some b",
 };
 
+auto cliRequired = clice::Argument{ .args = "required_child",
+                                    .desc   = "this option has a required child option",
+};
+
+auto cliRequiredOpt1 = clice::Argument{ .parent = &cliRequired,
+                                        .args   = "--opt1",
+                                        .desc   = "this option has a required child option",
+                                        .value  = std::string{},
+                                        .tags   = {"required"},
+};
+auto cliRequiredOpt2 = clice::Argument{ .parent = &cliRequired,
+                                        .args  = "--opt2",
+                                        .desc  = "this option is not required",
+                                        .value = std::string{},
+};
+
 
 int main(int argc, char** argv) {
     try {
@@ -204,6 +220,10 @@ int main(int argc, char** argv) {
         for (auto x : *cliBTVectorInt) {
             std::cout << "    " << x << "\n";
         }
+        std::cout << "\n\nrequired_child: " << cliRequired << "\n";
+        std::cout << "    --opt1: " << cliRequiredOpt1 << " " << *cliRequiredOpt1 << "\n";
+        std::cout << "    --opt2: " << cliRequiredOpt2 << " " << *cliRequiredOpt2 << "\n";
+
     } catch (std::exception const& e) {
         std::cerr << "error: " << e.what() << "\n";
     }

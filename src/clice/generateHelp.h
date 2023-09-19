@@ -7,7 +7,9 @@
 namespace clice {
 
 inline auto generatePartialSynopsis(ArgumentBase const& arg) -> std::string {
-    auto ret = fmt::format("[{}", fmt::join(arg.args, "|"));
+    auto ret = fmt::format("{}", fmt::join(arg.args, "|"));
+
+
     for (auto child : arg.arguments) {
         ret += " " + generatePartialSynopsis(*child);
     }
@@ -73,7 +75,9 @@ inline auto generatePartialSynopsis(ArgumentBase const& arg) -> std::string {
     } else {
         ret += " _unknown_";
     }
-    ret += "]";
+    if (!arg.tags.contains("required")) {
+        ret = "[" + ret + "]";
+    }
     return  ret;
 }
 inline auto generateSynopsis() -> std::string {
