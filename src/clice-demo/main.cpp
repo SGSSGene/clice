@@ -136,6 +136,13 @@ auto cliBTOutputPath = clice::Argument{ .parent = &cliBasicTypes,
                                         .desc   = "output path",
                                         .value  = std::filesystem::path{},
                                       };
+auto cliBTInputFile = clice::Argument{ .parent = &cliBasicTypes,
+                                       .args   = "--file",
+                                       .desc   = "file path",
+                                       .value  = std::filesystem::path{},
+                                       .tags   = {"short: FILE"},
+                                     };
+
 auto cliBTVectorInt = clice::Argument{ .parent = &cliBasicTypes,
                                        .args   = "--vector_int",
                                        .desc   = "vector of ints",
