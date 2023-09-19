@@ -161,7 +161,8 @@ inline auto generateHelp() -> std::string {
             auto typeAsString = typeToString(*arg);
 
             auto argstr = fmt::format("{}{} {}", ind, fmt::join(arg->args, ", "), typeAsString);
-            ret = ret + fmt::format("{:<{}} - {}\n", argstr, longestWord, arg->desc);
+            auto tagstr = std::string{arg->tags.contains("required")?"(required)":""};
+            ret = ret + fmt::format("{:<{}} - {} {}\n", argstr, longestWord, arg->desc, tagstr);
             f(arg->arguments, ind + "  ");
         }
         for (auto arg : args) {
@@ -169,7 +170,8 @@ inline auto generateHelp() -> std::string {
             auto typeAsString = typeToString(*arg);
 
             auto argstr = fmt::format("{}{} {}", ind, fmt::join(arg->args, ", "), typeAsString);
-            ret = ret + fmt::format("{:<{}} - {}\n", argstr, longestWord, arg->desc);
+            auto tagstr = std::string{arg->tags.contains("required")?"(required)":""};
+            ret = ret + fmt::format("{:<{}} - {} {}\n", argstr, longestWord, arg->desc, tagstr);
             f(arg->arguments, ind + "  ");
         }
     };

@@ -174,7 +174,7 @@ auto cliRequired = clice::Argument{ .args = "required_child",
 
 auto cliRequiredOpt1 = clice::Argument{ .parent = &cliRequired,
                                         .args   = "--opt1",
-                                        .desc   = "this option has a required child option",
+                                        .desc   = "this option is required",
                                         .value  = std::string{},
                                         .tags   = {"required"},
 };
