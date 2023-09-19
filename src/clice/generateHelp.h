@@ -9,6 +9,9 @@ namespace clice {
 inline auto typeToString(ArgumentBase const& arg) -> std::string {
     for (auto t : arg.tags) {
         if (t.starts_with("short: ")) {
+            if (arg.tags.contains("multi")) {
+                return fmt::format("[{}]...", t.substr(7));
+            }
             return t.substr(7);
         }
     }
@@ -46,31 +49,31 @@ inline auto typeToString(ArgumentBase const& arg) -> std::string {
     } else if (arg.type_index == std::type_index(typeid(std::filesystem::path))) {
         return "PATH";
     } else if (arg.type_index == std::type_index(typeid(std::vector<bool>))) {
-        return "[true|false] ...";
+        return "[true|false]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<int8_t>))) {
-        return "[INT8] ...";
+        return "[INT8]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<uint8_t>))) {
-        return "[UINT8] ...";
+        return "[UINT8]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<int16_t>))) {
-        return "[INT16] ...";
+        return "[INT16]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<uint16_t>))) {
-        return "[UINT16] ...";
+        return "[UINT16]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<int32_t>))) {
-        return "[INT32] ...";
+        return "[INT32]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<uint32_t>))) {
-        return "[UINT32] ...";
+        return "[UINT32]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<int64_t>))) {
-        return "[INT64] ...";
+        return "[INT64]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<uint64_t>))) {
-        return "[UINT64] ...";
+        return "[UINT64]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<float>))) {
-        return "[FLOAT] ...";
+        return "[FLOAT]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<double>))) {
-        return "[DOUBLE] ...";
+        return "[DOUBLE]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<std::string>))) {
-        return "[STRING] ...";
+        return "[STRING]...";
     } else if (arg.type_index == std::type_index(typeid(std::vector<std::filesystem::path>))) {
-        return "[PATH] ...";
+        return "[PATH]...";
     }
     return "_unknown_";
 }
@@ -134,7 +137,9 @@ inline auto generateHelp() -> std::string {
     size_t longestWord{};
     f = [&](auto const& args, std::string ind) {
         for (auto arg : args) {
-            auto argstr = fmt::format("{}{}", ind, fmt::join(arg->args, ", "));
+            auto typeAsString = typeToString(*arg);
+
+            auto argstr = fmt::format("{}{} {}", ind, fmt::join(arg->args, ", "), typeAsString);
             longestWord = std::max(longestWord, argstr.size());
         }
 
@@ -153,14 +158,18 @@ inline auto generateHelp() -> std::string {
 
         for (auto arg : args) {
             if (arg->args.empty() or arg->args[0][0] == '-') continue;
-            auto argstr = fmt::format("{}", fmt::join(arg->args, ", "));
-            ret = ret + fmt::format("{}{:<{}} - {}\n", ind, argstr, longestWord - ind.size(), arg->desc);
+            auto typeAsString = typeToString(*arg);
+
+            auto argstr = fmt::format("{}{} {}", ind, fmt::join(arg->args, ", "), typeAsString);
+            ret = ret + fmt::format("{:<{}} - {}\n", argstr, longestWord, arg->desc);
             f(arg->arguments, ind + "  ");
         }
         for (auto arg : args) {
             if (arg->args.empty() or arg->args[0][0] != '-') continue;
-            auto argstr = fmt::format("{}", fmt::join(arg->args, ", "));
-            ret = ret + fmt::format("{}{:<{}} - {}\n", ind, argstr, longestWord - ind.size(), arg->desc);
+            auto typeAsString = typeToString(*arg);
+
+            auto argstr = fmt::format("{}{} {}", ind, fmt::join(arg->args, ", "), typeAsString);
+            ret = ret + fmt::format("{:<{}} - {}\n", argstr, longestWord, arg->desc);
             f(arg->arguments, ind + "  ");
         }
     };
