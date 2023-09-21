@@ -183,7 +183,15 @@ auto cliRequiredOpt2 = clice::Argument{ .parent = &cliRequired,
                                         .desc  = "this option is not required",
                                         .value = std::string{},
 };
-
+auto cliCompletion = clice::Argument{ .args = "completion",
+                                      .desc = "section allowing to try different completion types",
+};
+auto cliCompletionStaticString = clice::Argument{ .parent = &cliCompletion,
+                                                  .args   = "--str1",
+                                                  .desc   = "static completion",
+                                                  .value = std::string{},
+                                                  .completion = []() -> std::vector<std::string> { return {"foo", "bar", "faa"}; },
+};
 
 int main(int argc, char** argv) {
     try {

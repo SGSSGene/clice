@@ -18,6 +18,13 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
         fmt::print("{}", *activeBases.back()->completion);
         return;
     }
+    if (activeBases.size() and activeBases.back()->fromString and activeBases.back()->completion_fn and (arg.empty() || arg[0] != '-')) {
+        for (auto c : activeBases.back()->completion_fn()) {
+            fmt::print("{}\n", c);
+        }
+        return;
+    }
+
     auto options = std::vector<std::tuple<std::string, std::string>>{};
     for (auto bases : activeBases) {
         for (auto arg : bases->arguments) {

@@ -26,6 +26,7 @@ struct ArgumentBase {
     std::optional<std::vector<std::string>> mapping;
     std::unordered_set<std::string>         tags;
     std::optional<std::string>              completion;
+    std::function<std::vector<std::string>()> completion_fn;
     std::vector<ArgumentBase*>              arguments; // child parameters
     bool                                    symlink;   // a symlink for example to "slix-env" should actually call "slix env"
     std::type_index                         type_index;
@@ -97,6 +98,7 @@ struct Argument {
     bool                  isSet{};
     T                     value{};
     mutable std::any      anyType; // used if T is a callback
+    std::function<std::vector<std::string>()> completion;
     std::function<void()> cb;
     size_t                                            cb_priority{100}; // lower priorities will be triggered before larger ones
     std::optional<std::unordered_map<std::string, T>> mapping;
@@ -151,14 +153,18 @@ struct Argument {
             arg.args    = desc.args;
             arg.symlink = desc.symlink;
             arg.desc    = desc.desc;
-            if constexpr (std::same_as<std::filesystem::path, T>) {
-                arg.completion = " -f ";
-            } else if (desc.mapping) {
-                std::string str;
-                for (auto [key, value] : *desc.mapping) {
-                    str += key + "\n";
+            if (desc.completion) {
+                arg.completion_fn = desc.completion;
+            } else {
+                if constexpr (std::same_as<std::filesystem::path, T>) {
+                    arg.completion = " -f ";
+                } else if (desc.mapping) {
+                    std::string str;
+                    for (auto [key, value] : *desc.mapping) {
+                        str += key + "\n";
+                    }
+                    arg.completion = str;
                 }
-                arg.completion = str;
             }
             if (desc.mapping) {
                 auto v = std::vector<std::string>{};
