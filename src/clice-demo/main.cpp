@@ -10,9 +10,29 @@ auto cliHelp    = clice::Argument{ .args   = "--help",
                                    .cb     = []{ std::cout << clice::generateHelp(); exit(0); },
                                  };
 
-auto cliAdd     = clice::Argument{ .args   = "add",
+void generateCWL();
+auto cliCWL     = clice::Argument{ .args   = "--cwl-description",
+                                   .desc   = "prints a cwl-description of a certain subcommand",
+                                   .value  = std::vector<std::string>{},
+                                   .cb     = generateCWL,
+                                 };
+void generateCWL() {
+    auto toolInfo = clice::generateCWL(*cliCWL);
+    toolInfo.metaInfo = {
+        .version        = "0.0.1",
+        .name           = "clice-demo",
+        .docurl         = "example.cpp",
+        .category       = "demo",
+        .description    = "demonstration tool of clice options",
+        .executableName = clice::argv0,
+    };
+    std::cout << convertToCWL(toolInfo);
+    exit(0);
+}
+
+auto cliAdd     = clice::Argument{ .args    = "add",
                                    .symlink = true, // allows access via symlink to clice-demo-add
-                                   .desc   = "adds some stuff",
+                                   .desc    = "adds some stuff",
                                  };
 auto cliVerbose = clice::Argument{ .parent = &cliAdd,
                                    .args   = "--verbose",
@@ -244,4 +264,5 @@ int main(int argc, char** argv) {
     } catch (std::exception const& e) {
         std::cerr << "error: " << e.what() << "\n";
     }
+    return 0;
 }

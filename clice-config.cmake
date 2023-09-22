@@ -7,7 +7,13 @@ endif()
 
 add_library(clice INTERFACE)
 add_library(clice::clice ALIAS clice)
-target_sources(clice INTERFACE FILE_SET set0 TYPE HEADERS BASE_DIRS src)
+
+option (CLICE_USE_TDL "Enables tool_description_lib(TDL) to be supported by CLICE (enables CWL features)" OFF)
+if (CLICE_USE_TDL)
+    find_package(tdl REQUIRED PATHS lib/tool_description_lib)
+    target_link_libraries(clice INTERFACE tdl::tdl)
+    target_compile_definitions(clice INTERFACE CLICE_USE_TDL)
+endif ()
 target_include_directories(clice
     INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src>
