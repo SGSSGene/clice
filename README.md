@@ -1,3 +1,5 @@
+<!-- SPDX-FileCopyrightText: 2023 Gottlieb+Freitag <info@gottliebtfreitag.de> -->
+<!-- SPDX-License-Identifier: CC0-1.0 -->
 # clice
 A CLI argument parser for c++20. It is the spiritual successor of sargparse. It shares many of the goals
 and design principles.
