@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2023 Gottlieb+Freitag <info@gottliebtfreitag.de>
+# SPDX-License-Identifier: CC0-1.0
 cmake_minimum_required (VERSION 3.14)
 
 # check if this is the main project
