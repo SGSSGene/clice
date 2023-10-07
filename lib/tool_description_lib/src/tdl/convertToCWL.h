@@ -1,10 +1,6 @@
-// -----------------------------------------------------------------------------------------------------
-// Copyright (c) 2006-2023, Knut Reinert & Freie Universität Berlin
-// Copyright (c) 2016-2023, Knut Reinert & MPI für molekulare Genetik
-// This file may be used, modified and/or redistributed under the terms of the 3-clause BSD-License
-// shipped with this file.
-// -----------------------------------------------------------------------------------------------------
-
+// SPDX-FileCopyrightText: 2006-2023, Knut Reinert & Freie Universität Berlin
+// SPDX-FileCopyrightText: 2016-2023, Knut Reinert & MPI für molekulare Genetik
+// SPDX-License-Identifier: BSD-3-Clause
 #pragma once
 
 #include "ToolInfo.h"
@@ -19,7 +15,7 @@
 #include <sstream>
 
 
-#if defined(_WIN32) || defined(WIN32)
+#if (defined(_WIN32) || defined(WIN32)) && !defined(__GNUG__)
 #   // Maybe visual studio will get there one day to support the c++ standard...
 #   // Until then we have to live with this:
 #   define and &&
@@ -228,7 +224,7 @@ inline void f(Node::Children const& children, ToolInfo const& doc, InputCB const
             [&](DoubleValue const&) {
                 addInput(cwl::CWLType::double_);
             },
-            [&](StringValue const& v) {
+            [&](StringValue const&) {
                 if (child.tags.count("output")) {
                     if (child.tags.count("file")) {
                         addOutput(cwl::CWLType::File);
@@ -369,7 +365,7 @@ inline auto convertToCWL(ToolInfo const& doc) -> std::string {
 
 }
 
-#if defined(_WIN32) || defined(WIN32)
+#if (defined(_WIN32) || defined(WIN32)) && !defined(__GNUG__)
 #undef and
 #undef or
 #undef not

@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/deNBI-cibi/tool_description_lib.git
 	branch = main
-	commit = c4ab11352dcecf096a51887ba143fb35ce38b8a1
-	parent = b9112d683d1b7d512c704078508d8dde4b9d133b
+	commit = 7caf3c5bd117cbb3db07eddaa3a8bd43dcd2f3b3
+	parent = 03cdf01841b29f1b0a781f95ed529bad7142af3c
 	method = merge
 	cmdver = 0.4.6
