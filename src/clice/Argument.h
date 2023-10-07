@@ -91,9 +91,9 @@ struct ListOfStrings : std::vector<std::string> {
     }
 };
 
-template <typename T = nullptr_t, typename T2 = nullptr_t>
+template <typename T = nullptr_t, typename T2L = nullptr_t, typename T2R = nullptr_t>
 struct Argument {
-    Argument<T2>*         parent{};
+    Argument<T2L, T2R>*   parent{};
     ListOfStrings         args;
     bool                  symlink;
     std::string           desc;
