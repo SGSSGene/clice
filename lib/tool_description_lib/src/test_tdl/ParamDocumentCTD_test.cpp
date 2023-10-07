@@ -1,10 +1,6 @@
-// -----------------------------------------------------------------------------------------------------
-// Copyright (c) 2006-2022, Knut Reinert & Freie Universität Berlin
-// Copyright (c) 2016-2022, Knut Reinert & MPI für molekulare Genetik
-// This file may be used, modified and/or redistributed under the terms of the 3-clause BSD-License
-// shipped with this file.
-// -----------------------------------------------------------------------------------------------------
-
+// SPDX-FileCopyrightText: 2006-2023, Knut Reinert & Freie Universität Berlin
+// SPDX-FileCopyrightText: 2016-2023, Knut Reinert & MPI für molekulare Genetik
+// SPDX-License-Identifier: CC0-1.0
 
 #include "utils.h"
 
@@ -113,12 +109,12 @@ void testNodeSingleInt() {
                 CPP20(.executableName =) {},
                 CPP20(.citations      =) {},
             },
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
               CPP20(.name        =) "foo",
               CPP20(.description =) "testing a single int with no tags and a min limit",
               CPP20(.tags        =) {},
               CPP20(.value       =) tdl::IntValue{5, 1}
-             }}}
+             }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -134,12 +130,12 @@ void testNodeSingleInt() {
     { // Single Int, no tags, a max limits
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single int with no tags and a max limit",
                 CPP20(.tags        =) {},
                 CPP20(.value       =) tdl::IntValue{CPP20(.value =) 5, CPP20(.minLimit =) std::nullopt, CPP20(.maxLimit =) 9}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -156,12 +152,12 @@ void testNodeSingleInt() {
     { // Single Int, no tags, with limits
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single int with no tags and with limits",
                 CPP20(.tags        =) {},
                 CPP20(.value       =) tdl::IntValue{CPP20(.value =) 5, CPP20(.minLimit =) 2, CPP20(.maxLimit =) 11}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -180,12 +176,12 @@ void testNodeSingleTypes() {
     { // Single double, no tags, with limits
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single double with no tags and with limits",
                 CPP20(.tags        =) {},
                 CPP20(.value       =) tdl::DoubleValue{CPP20(.value =) 3.5, CPP20(.minLimit =) 1.25, CPP20(.maxLimit =) 5.125}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -201,12 +197,12 @@ void testNodeSingleTypes() {
     { // Single string, no tags, with validator list
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single string with no tags and with a validator list",
                 CPP20(.tags        =) {},
                 CPP20(.value       =) tdl::StringValue{"hallo", {{"a", "b", "c", "uiae", "dtrn", "hallo"}}}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -225,12 +221,12 @@ void testNodeListTypes() {
     { // List of ints, no tags, with limits
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a list of ints with no tags and with limits",
                 CPP20(.tags        =) {},
                 CPP20(.value       =) tdl::IntValueList{CPP20(.value =) {7, 3, 4}, CPP20(.minLimit =) -1, CPP20(.maxLimit =) 99}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -252,12 +248,12 @@ void testNodeListTypes() {
     { // List of doubles, no tags, with limits
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a list of doubles with no tags and with limits",
                 CPP20(.tags        =) {},
                 CPP20(.value       =) tdl::DoubleValueList{CPP20(.value =) {2.5, 3.5, 4.5}, CPP20(.minLimit =) 1.25, CPP20(.maxLimit =) 5.125}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -278,12 +274,12 @@ void testNodeListTypes() {
     { // List of strings, no tags, with validator list
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a list of strings with no tags and with a validator list",
                 CPP20(.tags        =) {},
                 CPP20(.value       =) tdl::StringValueList{{"hallo", "b", "c"}, {{"a", "b", "c", "uiae", "dtrn", "hallo"}}}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -304,12 +300,12 @@ void testNodeListTypes() {
     { // a single string with only 'false' and 'true' as options
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single bool",
                 CPP20(.tags        =) {},
                 CPP20(.value       =) tdl::BoolValue{false}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -329,12 +325,12 @@ void testNodeNestedTypes() {
     { // zero nested parameters
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "some major command",
                 CPP20(.tags        =) {},
                 CPP20(.value       =) tdl::Node::Children{}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -351,7 +347,7 @@ void testNodeNestedTypes() {
     { // a single nested parameter
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "some major command",
                 CPP20(.tags        =) {},
@@ -361,7 +357,7 @@ void testNodeNestedTypes() {
                     CPP20(.tags        =) {},
                     CPP20(.value       =) tdl::IntValue{CPP20(.value =) 1, CPP20(.minLimit =) 0, CPP20(.maxLimit =) 63}
                   }}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -379,7 +375,7 @@ void testNodeNestedTypes() {
     { // a multi nested parameter
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "build",
                 CPP20(.description =) "builds some index for search",
                 CPP20(.tags        =) {},
@@ -405,7 +401,7 @@ void testNodeNestedTypes() {
                         CPP20(.value       =) tdl::StringValue{}
                     }
                 }
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -432,12 +428,12 @@ void testNodeTags() {
     { // Single Int with special tag "required"
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single int with special tag \"required\"",
                 CPP20(.tags        =) {"required"},
                 CPP20(.value       =) tdl::IntValue{5}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -454,12 +450,12 @@ void testNodeTags() {
     { // Single Int with special tag "advanced"
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single int with special tag \"advanced\"",
                 CPP20(.tags        =) {"advanced"},
                 CPP20(.value       =) tdl::IntValue{5}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -476,12 +472,12 @@ void testNodeTags() {
     { // Single Int with some random tags: "fast" and "easy"
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single int with normal tags \"fast\" and \"easy\"",
                 CPP20(.tags        =) {"fast", "easy"},
                 CPP20(.value       =) tdl::IntValue{5}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -499,12 +495,12 @@ void testNodeTags() {
     { // Single String with special tag "input file"
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single string with special tag \"input file\"",
                 CPP20(.tags        =) {"input file"},
                 CPP20(.value       =) tdl::StringValue{"input"}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -521,12 +517,12 @@ void testNodeTags() {
     { // Single String with special tag "output file"
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single string with special tag \"output file\"",
                 CPP20(.tags        =) {"output file"},
                 CPP20(.value       =) tdl::StringValue{"output"}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -544,12 +540,12 @@ void testNodeTags() {
     { // Single String with special tag "output prefix"
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a single string with special tag \"output prefix\"",
                 CPP20(.tags        =) {"output prefix"},
                 CPP20(.value       =) tdl::StringValue{"output-path"}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -567,12 +563,12 @@ void testNodeTags() {
     { // List of strings with special tag "input file"
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a list of strings with special tag \"input file\"",
                 CPP20(.tags        =) {"input file"},
                 CPP20(.value       =) tdl::StringValueList{}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
@@ -589,12 +585,12 @@ void testNodeTags() {
     { // Single String with special tag "output file"
         auto output = convertToCTD(tdl::ToolInfo {
             CPP20(.metaInfo =) {},
-            CPP20(.params =) {{{
+            CPP20(.params =) {{
                 CPP20(.name        =) "foo",
                 CPP20(.description =) "testing a list of strings with special tag \"output file\"",
                 CPP20(.tags        =) {"output file"},
                 CPP20(.value       =) tdl::StringValueList{}
-            }}}
+            }}
         });
         auto expected = std::string{R"(<?xml version="1.0" encoding="UTF-8"?>
 <tool ctdVersion="1.7">
