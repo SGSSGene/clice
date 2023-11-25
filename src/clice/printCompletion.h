@@ -14,7 +14,7 @@ inline void printCompletion(std::string gen) {
     if (is_symlink(path)) {
         path = read_symlink(path);
     }
-    gen = path.filename();
+    gen = path.filename().string();
     if (gen == std::string{"bash"}) {
         fmt::print("{}\ncomplete -F clice_GetOpts {}",
 R"(function clice_GetOpts ()
