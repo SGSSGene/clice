@@ -4,8 +4,10 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <numbers>
 #include <optional>
 #include <ranges>
+#include <sstream>
 #include <string>
 #include <string_view>
 

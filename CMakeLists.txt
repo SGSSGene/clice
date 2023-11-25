@@ -22,13 +22,8 @@ project(clice LANGUAGES CXX
 include(clice-config.cmake)
 
 if (${ROOT_PROJECT})
-    find_package (fmt REQUIRED)
-
     enable_testing()
 
-    add_executable(clice-demo src/clice-demo/main.cpp)
-    target_link_libraries(clice-demo
-                            clice::clice
-                            fmt::fmt)
-    add_test(clice-demo clice-demo)
+    add_subdirectory(src/test_header)
+    add_subdirectory(src/clice-demo)
 endif()

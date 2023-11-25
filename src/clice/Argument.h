@@ -6,14 +6,15 @@
 
 #include <algorithm>
 #include <any>
+#include <cstddef>
 #include <filesystem>
 #include <functional>
 #include <limits>
 #include <optional>
 #include <sstream>
 #include <string>
-#include <typeinfo>
 #include <typeindex>
+#include <typeinfo>
 #include <unordered_set>
 #include <vector>
 
@@ -91,7 +92,7 @@ struct ListOfStrings : std::vector<std::string> {
     }
 };
 
-template <typename T = nullptr_t, typename T2L = nullptr_t, typename T2R = nullptr_t>
+template <typename T = std::nullptr_t, typename T2L = std::nullptr_t, typename T2R = std::nullptr_t>
 struct Argument {
     Argument<T2L, T2R>*   parent{};
     ListOfStrings         args;
@@ -117,7 +118,7 @@ struct Argument {
                 anyType = value();
             }
             return *std::any_cast<R>(&anyType);
-        } else if constexpr (std::same_as<T, nullptr_t>) {
+        } else if constexpr (std::same_as<T, std::nullptr_t>) {
             []<bool type_available = false> {
                 static_assert(type_available, "Can't dereference a flag");
             }();
@@ -132,7 +133,7 @@ struct Argument {
     }
 
     template <typename CB>
-    auto run(CB _cb) -> nullptr_t {
+    auto run(CB _cb) -> std::nullptr_t {
         cb = _cb;
         return nullptr;
     }
@@ -184,7 +185,7 @@ struct Argument {
                 desc.isSet = true;
                 arg.cb = desc.cb;
                 arg.cb_priority = desc.cb_priority;
-                if constexpr (std::same_as<nullptr_t, T>) {
+                if constexpr (std::same_as<std::nullptr_t, T>) {
                 } else if constexpr (std::is_arithmetic_v<T>
                                      || std::same_as<std::string, T>
                                      || std::same_as<std::filesystem::path, T>
@@ -224,7 +225,7 @@ struct Argument {
                     return "unknown";
                 };
 
-                if constexpr (std::same_as<nullptr_t, T>) {
+                if constexpr (std::same_as<std::nullptr_t, T>) {
                     return std::nullopt;
                 } else if constexpr (std::same_as<bool, T>) {
                     if (desc.mapping) return reverseMapping(desc.value);
