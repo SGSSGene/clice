@@ -17,7 +17,7 @@ inline auto typeToString(ArgumentBase const& arg) -> std::string {
             return t.substr(7);
         }
     }
-    if (arg.type_index == std::type_index(typeid(nullptr_t))) {
+    if (arg.type_index == std::type_index(typeid(std::nullptr_t))) {
         //!Nothing to do, this is a flag and doesn't take any parameters
         return "";
     } else if (arg.mapping) {
