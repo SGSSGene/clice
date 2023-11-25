@@ -26,6 +26,8 @@ if (${ROOT_PROJECT})
 
     enable_testing()
 
+    add_subdirectory(src/test_header)
+
     add_executable(clice-demo src/clice-demo/main.cpp)
     target_link_libraries(clice-demo
                             clice::clice
