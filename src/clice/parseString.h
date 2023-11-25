@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <numbers>
 #include <optional>
 #include <ranges>
 #include <sstream>
