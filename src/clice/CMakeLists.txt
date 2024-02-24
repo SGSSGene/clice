@@ -15,7 +15,7 @@ target_link_libraries(clice INTERFACE fmt::fmt)
 
 if (CLICE_USE_TDL)
     find_package(tdl REQUIRED PATHS ../../lib/tool_description_lib)
-    target_link_libraries(clice INTERFACE tdl::tdl)
+    target_link_libraries(clice INTERFACE tdl::tdl fmt::fmt)
     target_compile_definitions(clice INTERFACE CLICE_USE_TDL)
 endif ()
 target_include_directories(clice

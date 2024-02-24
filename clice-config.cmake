@@ -5,6 +5,4 @@ if (TARGET clice::clice)
     return()
 endif()
 
-find_package (fmt REQUIRED)
-
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/src/clice ${CMAKE_CURRENT_BINARY_DIR}/clice)
