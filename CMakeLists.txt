@@ -20,7 +20,6 @@ project(clice LANGUAGES CXX
             DESCRIPTION "clice -- command line interface argument parsing")
 
 include(cmake/CPM.cmake)
-CPMaddPackage("gh:fmtlib/fmt#10.1.1")
 include(clice-config.cmake)
 
 if (${ROOT_PROJECT})
