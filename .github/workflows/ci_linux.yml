@@ -26,11 +26,11 @@ jobs:
           - gcc11-cpp20-release
           - gcc13-cpp20-debug-sanitize_address
           - gcc13-cpp20-debug-sanitize_undefined
-          - gcc13-cpp20-lcov
+          - gcc13-cpp20-lcov-cpm_check_version
           - clang17-cpp20-release
     steps:
       - name: Standard IV-project testing
-        uses: iv-project/IVaction/linux-testing@v6.2
+        uses: iv-project/IVaction/linux-testing@feat/cpm/version_checkv3
         with:
           compiler: ${{ matrix.compiler }}
           threads: 2
