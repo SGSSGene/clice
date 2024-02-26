@@ -19,6 +19,7 @@ endif ()
 project(clice LANGUAGES CXX
             DESCRIPTION "clice -- command line interface argument parsing")
 
+include(cmake/CPM.cmake)
 include(clice-config.cmake)
 
 if (${ROOT_PROJECT})

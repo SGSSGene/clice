@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: 2023 Gottlieb+Freitag <info@gottliebtfreitag.de>
+# SPDX-License-Identifier: CC0-1.0
+name: "CI"
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+
+env:
+  TZ: Europe/Berlin
+
+concurrency:
+  group: ${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.os }}-${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-22.04, compiler: spdx_reuse_lint}
+          - {os: ubuntu-22.04, compiler: cpm_version_check}
+          - {os: ubuntu-22.04, compiler: gcc11-cpp20-release}
+          - {os: ubuntu-22.04, compiler: gcc12-cpp20-release}
+          - {os: ubuntu-22.04, compiler: gcc13-cpp20-release}
+          - {os: ubuntu-22.04, compiler: gcc13-cpp20-debug-sanitize_address}
+          - {os: ubuntu-22.04, compiler: gcc13-cpp20-debug-sanitize_undefined}
+          - {os: ubuntu-22.04, compiler: gcc13-cpp20-lcov}
+          - {os: ubuntu-22.04, compiler: clang17-cpp20-release}
+          - {os: macos-12,     compiler: gcc13-cpp20-release}
+          - {os: macos-12,     compiler: clang17-cpp20-release}
+    steps:
+      - name: Standard IV-project testing
+        uses: iv-project/IVaction@v9.1
+        with:
+          compiler: ${{ matrix.compiler }}
+          threads: 2
+          codecov_token: ${{ secrets.CODECOV_TOKEN }}
