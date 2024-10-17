@@ -1,8 +1,7 @@
 # SPDX-FileCopyrightText: 2006-2023, Knut Reinert & Freie Universität Berlin
 # SPDX-FileCopyrightText: 2016-2023, Knut Reinert & MPI für molekulare Genetik
 # SPDX-License-Identifier: BSD-3-Clause
-
-cmake_minimum_required (VERSION 3.14)
+cmake_minimum_required (VERSION 3.25)
 
 # Check every header compiles on its own.
 # Validates that headers have all required includes.

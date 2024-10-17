@@ -1,20 +1,17 @@
 # SPDX-FileCopyrightText: 2023 Gottlieb+Freitag <info@gottliebtfreitag.de>
 # SPDX-License-Identifier: CC0-1.0
-cmake_minimum_required (VERSION 3.14)
+cmake_minimum_required (VERSION 3.25)
 
 add_library(clice INTERFACE)
 add_library(clice::clice ALIAS clice)
+target_compile_features(clice INTERFACE cxx_std_20)
 
-option (CLICE_USE_TDL "Enables tool_description_lib(TDL) to be supported by CLICE (enables CWL features)" OFF)
-if (${ROOT_PROJECT})
-    set(CLICE_USE_TDL ON)
-endif()
 
+option (CLICE_USE_TDL "Enables tool_description_lib(TDL) to be supported by CLICE (enables CWL features)" ${PROJECT_IS_TOP_LEVEL})
 target_link_libraries(clice INTERFACE fmt::fmt)
 
 
 if (CLICE_USE_TDL)
-    find_package(tdl REQUIRED PATHS ../../lib/tool_description_lib)
     target_link_libraries(clice INTERFACE tdl::tdl fmt::fmt)
     target_compile_definitions(clice INTERFACE CLICE_USE_TDL)
 endif ()
