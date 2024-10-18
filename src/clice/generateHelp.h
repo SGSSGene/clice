@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 namespace clice {
 
