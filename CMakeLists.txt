@@ -7,7 +7,7 @@ project(clice LANGUAGES CXX
 
 include(cmake/CPM.cmake)
 CPMAddPackage("gh:SGSSGene/cpm.dependencies@0.0.8")
-CPMLoadDependenciesFile("${CMAKE_SOURCE_DIR}/cpm.dependencies")
+CPMLoadDependenciesFile("${CMAKE_CURRENT_SOURCE_DIR}/cpm.dependencies")
 
 # check if this is the main project
 if (${PROJECT_IS_TOP_LEVEL})
