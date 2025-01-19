@@ -3,7 +3,7 @@
   "packages": [
     {
       "name": "fmt",
-      "version": "11.0.2",
+      "version": "11.1.1",
       "github_repository": "fmtlib/fmt",
       "git_tag": "{VERSION}"
     },
