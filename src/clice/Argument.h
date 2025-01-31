@@ -26,12 +26,12 @@ struct ArgumentBase {
     ArgumentBase*                           parent{};
     std::vector<std::string>                args;
     std::string                             desc;
-    std::optional<std::vector<std::string>> mapping;
+    std::optional<std::vector<std::string>> mapping{};
     std::unordered_set<std::string>         tags;
-    std::optional<std::string>              completion;
+    std::optional<std::string>              completion{};
     std::function<std::vector<std::string>()> completion_fn;
-    std::vector<ArgumentBase*>              arguments; // child parameters
-    bool                                    symlink;   // a symlink for example to "slix-env" should actually call "slix env"
+    std::vector<ArgumentBase*>              arguments;  // child parameters
+    bool                                    symlink{};  // a symlink for example to "slix-env" should actually call "slix env"
     std::type_index                         type_index;
     std::vector<ArgumentBase*>              children;
 
@@ -95,17 +95,17 @@ struct ListOfStrings : std::vector<std::string> {
 template <typename T = std::nullptr_t, typename T2L = std::nullptr_t, typename T2R = std::nullptr_t>
 struct Argument {
     Argument<T2L, T2R>*   parent{};
-    ListOfStrings         args;
-    bool                  symlink;
-    std::string           desc;
+    ListOfStrings         args{};
+    bool                  symlink{};
+    std::string           desc{};
     bool                  isSet{};
     T                     value{};
-    mutable std::any      anyType; // used if T is a callback
-    std::function<std::vector<std::string>()> completion;
-    std::function<void()> cb;
+    mutable std::any      anyType{}; // used if T is a callback
+    std::function<std::vector<std::string>()> completion{};
+    std::function<void()> cb{};
     size_t                                            cb_priority{100}; // lower priorities will be triggered before larger ones
-    std::optional<std::unordered_map<std::string, T>> mapping;
-    std::unordered_set<std::string>                   tags;  // known tags "required"
+    std::optional<std::unordered_map<std::string, T>> mapping{};
+    std::unordered_set<std::string>                   tags{};  // known tags "required"
 
     operator bool() const {
         return isSet;
