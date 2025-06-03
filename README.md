@@ -9,13 +9,20 @@ and design principles.
 #include <clice/clice.h>
 #include <iostream>
 
-auto cliAdd     = clice::Argument{ .arg    = "add",
+auto cliAdd     = clice::Argument{ .args   = {"add"},
                                    .desc   = "adds some stuff",
                                  };
 auto cliVerbose = clice::Argument{ .parent = &cliAdd,
-                                   .arg    = "--verbose",
+                                   .args   = {"--verbose", "-v"},
                                    .desc   = "detailed description of what is happening",
                                   };
+
+auto cliRequired = clice::Argument{ .args   = {"-r", "--required"},
+                                    .desc   = "some thing required",
+                                    .value  = size_t{0},
+                                    .tags   = {"required"}
+                                   };
+
 int main(int argc, char** argv) {
     if (auto failed = clice::parse(argc, argv); failed) {
         std::cerr << "parsing failed: " << *failed << "\n";
@@ -24,6 +31,7 @@ int main(int argc, char** argv) {
 
     std::cout << cliAdd << "\n";
     std::cout << "  " << cliVerbose << "\n";
+    std::cout << "required: " << *cliRequired << "\n";
     return 0;
 }
 ```
