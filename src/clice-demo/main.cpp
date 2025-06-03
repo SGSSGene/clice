@@ -205,6 +205,13 @@ auto cliRequiredOpt2 = clice::Argument{ .parent = &cliRequired,
                                         .desc  = "this option is not required",
                                         .value = std::string{},
 };
+
+auto cliAlwaysRequired = clice::Argument{ .args  = "always_required",
+                                          .desc  = "this option is always required",
+                                          .value = size_t{},
+                                          .tags  = {"required"},
+};
+
 auto cliCompletion = clice::Argument{ .args = "completion",
                                       .desc = "section allowing to try different completion types",
 };
@@ -260,6 +267,8 @@ int main(int argc, char** argv) {
         std::cout << "\n\nrequired_child: " << cliRequired << "\n";
         std::cout << "    --opt1: " << cliRequiredOpt1 << " " << *cliRequiredOpt1 << "\n";
         std::cout << "    --opt2: " << cliRequiredOpt2 << " " << *cliRequiredOpt2 << "\n";
+
+        std::cout << "\n\nalways_required: " << cliAlwaysRequired << "\n";
 
     } catch (std::exception const& e) {
         std::cerr << "error: " << e.what() << "\n";
