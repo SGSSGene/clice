@@ -37,7 +37,7 @@ jobs:
             }
           - {os: ubuntu-22.04, compiler: clang20-cpp20-release}
           - {os: ubuntu-22.04, compiler: intel-cpp20-release}
-          - {os: ubuntu-22.04, compiler: emscripten-cpp20-release}
+          - {os: ubuntu-22.04, compiler: emscripten-cpp20-release, cmake_flags: "-DCMAKE_EXE_LINKER_FLAGS='-fexceptions -sNO_DISABLE_EXCEPTION_CATCHING'", cmake_cxx_flags: "-fexceptions"}
           - {os: macos-13,     compiler: gcc15-cpp20-release}
           - {os: macos-13,     compiler: clang20-cpp20-release}
           - {os: macos-14,     compiler: gcc15-cpp20-release}
@@ -52,6 +52,9 @@ jobs:
           compiler: ${{ matrix.compiler }}
           threads: 2
           codecov_token: ${{ secrets.CODECOV_TOKEN }}
+          cmake_flags: ${{ matrix.cmake_flags }}
+          cmake_c_flags: ${{ matrix.cmake_c_flags }}
+          cmake_cxx_flags: ${{ matrix.cmake_cxx_flags }}
   final:
     runs-on: ubuntu-22.04
     name: final-pass
