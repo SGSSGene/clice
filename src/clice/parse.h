@@ -81,6 +81,20 @@ inline auto parseSingleDash(int _argc, char const* const* _argv) -> std::optiona
 }
 
 
+// creates a string like "-i, --input"
+inline auto createParameterStrList(std::vector<std::string> const& args) -> std::string {
+    auto param = std::string{};
+    for (auto const& a : args) {
+        param += a + ", ";
+    }
+    if (param.size() > 1) {
+        param.pop_back();
+        param.pop_back();
+    }
+    return param;
+}
+
+
 /**
  * allowSingleDash: allows flags like "-a -b" be combined to "-ab"
  */
@@ -184,34 +198,29 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
         exit(0);
     }
 
-    // check if all arguments got parameters
+    // check if all active arguments got parameters
     for (size_t j{0}; j < activeBases.size(); ++j) {
         auto const& base = activeBases[activeBases.size()-j-1];
         if (!base->tags.contains("multi") && base->fromString) {
-            auto param = std::string{};
-            for (auto const& a : base->args) {
-                param += a + ", ";
-            }
-            param.pop_back(); param.pop_back();
+            auto param = createParameterStrList(base->args);
             throw std::runtime_error{"option \"" + param + "\" is missing a value"};
         }
         for (auto child : base->children) {
             if (child->tags.contains("required")) {
                 if (std::ranges::find(activeBases, child) == activeBases.end()) {
-                    auto option = std::string{};
-                    for (auto const& a : base->args) {
-                        option += a + ", ";
-                    }
-                    option.pop_back(); option.pop_back();
-
-                    auto suboption = std::string{};
-                    for (auto const& a : child->args) {
-                        suboption += a + ", ";
-                    }
-                    suboption.pop_back(); suboption.pop_back();
-
+                    auto option = createParameterStrList(base->args);
+                    auto suboption = createParameterStrList(child->args);
                     throw std::runtime_error{"option \"" + suboption + "\" is required (enforced by \"" + option + "\")"};
                 }
+            }
+        }
+    }
+    // check if all top level arguments got parameters
+    for (auto base : Register::getInstance().arguments) {
+        if (base->tags.contains("required")) {
+            if (std::ranges::find(activeBases, base) == activeBases.end()) {
+                auto option = createParameterStrList(base->args);
+                throw std::runtime_error{"option \"" + option + "\" is a required parameter"};
             }
         }
     }
