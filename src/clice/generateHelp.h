@@ -86,7 +86,7 @@ inline auto generatePartialSynopsis(ArgumentBase const& arg) -> std::string {
     auto ret = fmt::format("{}", fmt::join(arg.args, "|"));
 
 
-    for (auto child : arg.arguments) {
+    for (auto child : arg.children) {
         ret += " " + generatePartialSynopsis(*child);
     }
     auto typeAsString = typeToString(arg);
@@ -149,11 +149,11 @@ inline auto generateHelp() -> std::string {
 
         for (auto arg : args) {
             if (arg->args.empty() or arg->args[0][0] == '-') continue;
-            f(arg->arguments, ind + "  ");
+            f(arg->children, ind + "  ");
         }
         for (auto arg : args) {
             if (arg->args.empty() or arg->args[0][0] != '-') continue;
-            f(arg->arguments, ind + "  ");
+            f(arg->children, ind + "  ");
         }
     };
     f(args, "");
@@ -173,7 +173,7 @@ inline auto generateHelp() -> std::string {
             }();
 
             ret = ret + fmt::format("{:<{}} - {} {}\n", argstr, longestWord, arg->desc, tagstr);
-            f(arg->arguments, ind + "  ");
+            f(arg->children, ind + "  ");
         }
         for (auto arg : args) {
             if (arg->args.empty() or arg->args[0][0] != '-') continue;
@@ -187,7 +187,7 @@ inline auto generateHelp() -> std::string {
                 return fmt::format("(default: {})", *defaultValue);
             }();
             ret = ret + fmt::format("{:<{}} - {} {}\n", argstr, longestWord, arg->desc, tagstr);
-            f(arg->arguments, ind + "  ");
+            f(arg->children, ind + "  ");
         }
     };
     f(args, "");

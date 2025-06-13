@@ -30,7 +30,7 @@ struct ArgumentBase {
     std::unordered_set<std::string>         tags;
     std::optional<std::string>              completion{};
     std::function<std::vector<std::string>()> completion_fn;
-    std::vector<ArgumentBase*>              arguments;  // child parameters
+    std::vector<ArgumentBase*>              children;  // child parameters
     bool                                    symlink{};  // a symlink for example to "slix-env" should actually call "slix env"
     std::type_index                         type_index;
 
@@ -63,7 +63,7 @@ inline ArgumentBase::ArgumentBase(ArgumentBase* parent, std::type_index idx)
     , type_index{idx}
 {
     if (parent) {
-        parent->arguments.push_back(this);
+        parent->children.push_back(this);
     } else {
         Register::getInstance().arguments.push_back(this);
     }
@@ -71,11 +71,11 @@ inline ArgumentBase::ArgumentBase(ArgumentBase* parent, std::type_index idx)
 
 inline ArgumentBase::~ArgumentBase() {
     if (parent) {
-        auto& arguments = parent->arguments;
-        arguments.erase(std::remove(arguments.begin(), arguments.end(), this), arguments.end());
+        auto& children = parent->children;
+        children.erase(std::remove(children.begin(), children.end(), this), children.end());
     } else {
-        auto& arguments = Register::getInstance().arguments;
-        arguments.erase(std::remove(arguments.begin(), arguments.end(), this), arguments.end());
+        auto& children = Register::getInstance().arguments;
+        children.erase(std::remove(children.begin(), children.end(), this), children.end());
     }
 }
 

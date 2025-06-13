@@ -29,7 +29,7 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
 
     auto options = std::vector<std::tuple<std::string, std::string>>{};
     for (auto bases : activeBases) {
-        for (auto arg : bases->arguments) {
+        for (auto arg : bases->children) {
             if (!arg->args.empty()) {
                 options.emplace_back(arg->args[0], arg->desc);
             }
@@ -141,7 +141,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
     };
 
     auto findActiveArg = [&](std::string_view str, ArgumentBase* base) -> ArgumentBase* {
-        for (auto arg : base->arguments) {
+        for (auto arg : base->children) {
             auto iter = std::find(arg->args.begin(), arg->args.end(), str);
             if (iter != arg->args.end() and arg->init) {
                 return arg;
@@ -214,7 +214,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
             auto param = createParameterStrList(base->args);
             throw std::runtime_error{"option \"" + param + "\" is missing a value (2)"};
         }
-        for (auto child : base->arguments) {
+        for (auto child : base->children) {
             if (child->tags.contains("required")) {
                 if (std::ranges::find(activeBases, child) == activeBases.end()) {
                     auto option = createParameterStrList(base->args);
@@ -245,7 +245,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
                     arg->cb();
                 });
             }
-            f(arg->arguments);
+            f(arg->children);
         }
     };
     f(clice::Register::getInstance().arguments);
