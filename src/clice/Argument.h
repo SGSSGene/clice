@@ -178,10 +178,12 @@ struct Argument {
             }
             arg.tags = desc.tags;
             constexpr bool HasPushBack = requires {{ std::declval<T>().push_back(std::declval<typename T::value_type>()) }; };
-            if (HasPushBack && !std::same_as<std::string, T> && !std::same_as<std::filesystem::path, T>) {
+
+            bool isMulti = HasPushBack && !std::same_as<std::string, T> && !std::same_as<std::filesystem::path, T>;
+            if (isMulti) {
                 arg.tags.insert("multi");
             }
-            arg.init = [&]() {
+            arg.init = [&, isMulti]() {
                 desc.isSet = true;
                 arg.cb = desc.cb;
                 arg.cb_priority = desc.cb_priority;

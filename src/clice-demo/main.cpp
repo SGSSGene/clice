@@ -222,6 +222,16 @@ auto cliCompletionStaticString = clice::Argument{ .parent = &cliCompletion,
                                                   .completion = []() -> std::vector<std::string> { return {"foo", "bar", "faa"}; },
 };
 
+auto cliSingleTrailingArgument = clice::Argument{ .desc   = "single trailing argument",
+                                                  .value = std::string{},
+};
+
+/*auto cliMultiTrailingArguments = clice::Argument{ .desc   = "multiple trailing arguments",
+                                                  .value = std::vector<std::string>{},
+};*/
+
+
+
 int main(int argc, char** argv) {
     try {
         if (auto failed = clice::parse(argc, argv, /*.allowDashCombi=*/true); failed) {
@@ -269,6 +279,12 @@ int main(int argc, char** argv) {
         std::cout << "    --opt2: " << cliRequiredOpt2 << " " << *cliRequiredOpt2 << "\n";
 
         std::cout << "\n\nalways_required: " << cliAlwaysRequired << "\n";
+
+        std::cout << "\n\nsingle trailing argument: " << *cliSingleTrailingArgument << "\n";
+/*        std::cout << "multiple trailing arguments: " << cliMultiTrailingArguments->size() << "\n";
+        for (auto s : *cliMultiTrailingArguments) {
+            std::cout << "  - " << s << "\n";
+        }*/
 
     } catch (std::exception const& e) {
         std::cerr << "error: " << e.what() << "\n";

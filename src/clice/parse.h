@@ -182,7 +182,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
                         param += a + ", ";
                     }
                     param.pop_back(); param.pop_back();
-                    throw std::runtime_error{"option \"" + param + "\" is missing a value"};
+                    throw std::runtime_error{"option \"" + param + "\" is missing a value (1)"};
                 }
             }
             auto arg = findRootArg(argv[i]);
@@ -191,6 +191,15 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
                 activeBases.push_back(arg);
                 return;
             }
+            // check if an cli option without arguments exists
+            for (auto arg : Register::getInstance().arguments) {
+                if (arg->args.empty()) {
+                    arg->init();
+                    arg->fromString(argv[i]);
+                    return;
+                }
+            }
+
             throw std::runtime_error{std::string{"unexpected cli argument \""} + argv[i] + "\""};
         }();
     }
@@ -203,7 +212,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
         auto const& base = activeBases[activeBases.size()-j-1];
         if (!base->tags.contains("multi") && base->fromString) {
             auto param = createParameterStrList(base->args);
-            throw std::runtime_error{"option \"" + param + "\" is missing a value"};
+            throw std::runtime_error{"option \"" + param + "\" is missing a value (2)"};
         }
         for (auto child : base->children) {
             if (child->tags.contains("required")) {
