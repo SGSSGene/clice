@@ -182,7 +182,7 @@ struct Argument {
             if (isMulti) {
                 arg.tags.insert("multi");
             }
-            arg.init = [&, isMulti]() {
+            arg.init = [&]() {
                 desc.isSet = true;
                 arg.cb = desc.cb;
                 arg.cb_priority = desc.cb_priority;
