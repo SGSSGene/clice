@@ -3,10 +3,12 @@
 #pragma once
 
 #include "Argument.h"
+#include "generateHelp.h"
 #include "printCompletion.h"
 
 #include <cassert>
 #include <fmt/format.h>
+#include <iostream>
 #include <list>
 #include <map>
 #include <span>
@@ -53,7 +55,7 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
 }
 }
 
-auto parse(int argc, char const* const* argv, bool allowSingleDash = false) -> std::optional<std::string>;
+auto parse(int argc, char const* const* argv, bool allowDashCombi = false) -> std::optional<std::string>;
 
 inline auto parseSingleDash(int _argc, char const* const* _argv) -> std::optional<std::string> {
     auto args   = std::list<std::string>{};
@@ -96,10 +98,10 @@ inline auto createParameterStrList(std::vector<std::string> const& args) -> std:
 
 
 /**
- * allowSingleDash: allows flags like "-a -b" be combined to "-ab"
+ * allowDashCombi: allows flags like "-a -b" be combined to "-ab"
  */
-inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> std::optional<std::string> {
-    if (allowSingleDash) {
+inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std::optional<std::string> {
+    if (allowDashCombi) {
         return parseSingleDash(argc, argv);
     }
 
@@ -278,5 +280,61 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
 
     return std::nullopt;
 }
+
+struct Parse {
+    int argc;
+    char const* const* argv;
+    bool allowDashCombi{false};    // allows to combine "-a -b" into "-ab"
+    bool helpOpt{false};         // automatically registers --help option
+    bool catchExceptions{false}; // catches exception and prints them
+    std::function<void()> run;   // function to run
+
+    struct CTor {
+        CTor(Parse& parse) {
+            auto f = [&]() {
+                if (auto failed = clice::parse(parse.argc, parse.argv, parse.allowDashCombi); failed) {
+                    std::cerr << "parsing failed: " << *failed << "\n";
+                    std::exit(1);
+                }
+
+                if (parse.run) {
+                    parse.run();
+                }
+            };
+
+            auto wrappedWithHelp = [&](auto cb) {
+                auto cliHelp    = clice::Argument{ .args   = {"-h", "--help"},
+                                                   .desc   = "prints the help page",
+                                                   .cb     = []{ std::cout << clice::generateHelp(); exit(0); },
+                };
+                cb();
+
+            };
+
+            if (parse.catchExceptions) {
+                try {
+                    if (parse.helpOpt) {
+                        wrappedWithHelp(f);
+                    } else {
+                        f();
+                    }
+                } catch(std::exception const& e) {
+                    std::cerr << "error: " << e.what() << "\n";
+                    std::exit(1);
+                } catch(...) {
+                    std::cerr << "unknown exception was thrown\n";
+                    std::exit(1);
+                }
+            } else {
+                if (parse.helpOpt) {
+                    wrappedWithHelp(f);
+                } else {
+                    f();
+                }
+            }
+        }
+    } ctor{*this};
+
+};
 
 }
