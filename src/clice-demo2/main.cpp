@@ -13,7 +13,7 @@ auto cliNbr     = clice::Argument{ .args   = {"-n", "--nbr"},
 };
 }
 int main(int argc, char** argv) {
-    clice::Parse{
+    clice::parse({
         .argc = argc,
         .argv = argv,
         .allowDashCombi  = true, // default false, -a -b -> -ab
@@ -23,6 +23,6 @@ int main(int argc, char** argv) {
             std::cout << "verbose: " << cliVerbose << "\n";
             std::cout << "nbr: " << *cliNbr << "\n";
         }
-    };
+    });
     return 0;
 }

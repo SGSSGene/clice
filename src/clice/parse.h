@@ -288,53 +288,48 @@ struct Parse {
     bool helpOpt{false};         // automatically registers --help option
     bool catchExceptions{false}; // catches exception and prints them
     std::function<void()> run;   // function to run
-
-    struct CTor {
-        CTor(Parse& parse) {
-            auto f = [&]() {
-                if (auto failed = clice::parse(parse.argc, parse.argv, parse.allowDashCombi); failed) {
-                    std::cerr << "parsing failed: " << *failed << "\n";
-                    std::exit(1);
-                }
-
-                if (parse.run) {
-                    parse.run();
-                }
-            };
-
-            auto wrappedWithHelp = [&](auto cb) {
-                auto cliHelp    = clice::Argument{ .args   = {"-h", "--help"},
-                                                   .desc   = "prints the help page",
-                                                   .cb     = []{ std::cout << clice::generateHelp(); exit(0); },
-                };
-                cb();
-
-            };
-
-            if (parse.catchExceptions) {
-                try {
-                    if (parse.helpOpt) {
-                        wrappedWithHelp(f);
-                    } else {
-                        f();
-                    }
-                } catch(std::exception const& e) {
-                    std::cerr << "error: " << e.what() << "\n";
-                    std::exit(1);
-                } catch(...) {
-                    std::cerr << "unknown exception was thrown\n";
-                    std::exit(1);
-                }
-            } else {
-                if (parse.helpOpt) {
-                    wrappedWithHelp(f);
-                } else {
-                    f();
-                }
-            }
-        }
-    } ctor{*this};
-
 };
+inline void parse(Parse const& parse) {
+    auto f = [&]() {
+        if (auto failed = clice::parse(parse.argc, parse.argv, parse.allowDashCombi); failed) {
+            std::cerr << "parsing failed: " << *failed << "\n";
+            std::exit(1);
+        }
 
+        if (parse.run) {
+            parse.run();
+        }
+    };
+
+    auto wrappedWithHelp = [&](auto cb) {
+        auto cliHelp    = clice::Argument{ .args   = {"-h", "--help"},
+                                           .desc   = "prints the help page",
+                                           .cb     = []{ std::cout << clice::generateHelp(); exit(0); },
+        };
+        cb();
+
+    };
+
+    if (parse.catchExceptions) {
+        try {
+            if (parse.helpOpt) {
+                wrappedWithHelp(f);
+            } else {
+                f();
+            }
+        } catch(std::exception const& e) {
+            std::cerr << "error: " << e.what() << "\n";
+            std::exit(1);
+        } catch(...) {
+            std::cerr << "unknown exception was thrown\n";
+            std::exit(1);
+        }
+    } else {
+        if (parse.helpOpt) {
+            wrappedWithHelp(f);
+        } else {
+            f();
+        }
+    }
+}
 }
