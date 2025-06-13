@@ -214,7 +214,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
             auto param = createParameterStrList(base->args);
             throw std::runtime_error{"option \"" + param + "\" is missing a value (2)"};
         }
-        for (auto child : base->children) {
+        for (auto child : base->arguments) {
             if (child->tags.contains("required")) {
                 if (std::ranges::find(activeBases, child) == activeBases.end()) {
                     auto option = createParameterStrList(base->args);

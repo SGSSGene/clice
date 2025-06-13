@@ -33,7 +33,6 @@ struct ArgumentBase {
     std::vector<ArgumentBase*>              arguments;  // child parameters
     bool                                    symlink{};  // a symlink for example to "slix-env" should actually call "slix env"
     std::type_index                         type_index;
-    std::vector<ArgumentBase*>              children;
 
     std::function<void()> init;
     std::function<void(std::string_view)>       fromString;
@@ -150,9 +149,6 @@ struct Argument {
         CTor(Argument& desc)
             : arg { desc.parent?&desc.parent->storage.arg:nullptr, detectType()}
         {
-            if (arg.parent) {
-                arg.parent->children.push_back(&arg);
-            }
             arg.args    = desc.args;
             arg.symlink = desc.symlink;
             arg.desc    = desc.desc;
