@@ -226,10 +226,15 @@ auto cliSingleTrailingArgument = clice::Argument{ .desc   = "single trailing arg
                                                   .value = std::string{},
 };
 
-/*auto cliMultiTrailingArguments = clice::Argument{ .desc   = "multiple trailing arguments",
-                                                  .value = std::vector<std::string>{},
-};*/
+auto cliSingleTrailingArgumentPos2 = clice::Argument{ .parent = &cliSingleTrailingArgument,
+                                                      .desc   = "single trailing argument at position 2",
+                                                      .value = std::string{},
+                                                      .tags = {"required"}
+};
 
+auto cliMultiTrailingArguments = clice::Argument{ .desc   = "multiple trailing arguments",
+                                                  .value = std::vector<std::string>{},
+};
 
 
 int main(int argc, char** argv) {
@@ -280,11 +285,11 @@ int main(int argc, char** argv) {
 
         std::cout << "\n\nalways_required: " << cliAlwaysRequired << "\n";
 
-        std::cout << "\n\nsingle trailing argument: " << *cliSingleTrailingArgument << "\n";
-/*        std::cout << "multiple trailing arguments: " << cliMultiTrailingArguments->size() << "\n";
+        std::cout << "\n\nsingle trailing argument: " << *cliSingleTrailingArgument << " " << *cliSingleTrailingArgumentPos2 << "\n";
+        std::cout << "multiple trailing arguments: " << cliMultiTrailingArguments->size() << "\n";
         for (auto s : *cliMultiTrailingArguments) {
             std::cout << "  - " << s << "\n";
-        }*/
+        }
 
     } catch (std::exception const& e) {
         std::cerr << "error: " << e.what() << "\n";

@@ -167,7 +167,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
             // walk up the arguments, until one active argument has a child with fitting parameter
             for (size_t j{0}; j < activeBases.size(); ++j) {
                 auto const& base = activeBases[activeBases.size()-j-1];
-                if ((argv[i][0] != '-' or allTrailing or !base->tags.contains("multi")) and base->fromString) {
+                if (((argv[i][0] != '-' or allTrailing or !base->tags.contains("multi")) and base->fromString) and (!base->tags.contains("multi") || base->args.size()>0 || allTrailing)) {
                     base->fromString(argv[i]);
                     return;
                 }
@@ -192,11 +192,31 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
                 return;
             }
             // check if an cli option without arguments exists
+            // first walk up active arguments
+            for (size_t j{0}; j < activeBases.size(); ++j) {
+                auto const& base = activeBases[activeBases.size()-j-1];
+                for (auto arg : base->children) {
+                    if (arg->args.empty() && arg->init) {
+                        arg->init();
+                        if (!arg->tags.contains("multi")) arg->init = nullptr;
+                        activeBases.push_back(arg);
+                        arg->fromString(argv[i]);
+                        return;
+                    }
+                }
+            }
+
+            // second check root arguments
             for (auto arg : Register::getInstance().arguments) {
                 if (arg->args.empty()) {
-                    arg->init();
-                    arg->fromString(argv[i]);
-                    return;
+                    if (arg->init) {
+                        arg->init();
+                        if (!arg->tags.contains("multi")) arg->init = nullptr;
+
+                        activeBases.push_back(arg);
+                        arg->fromString(argv[i]);
+                        return;
+                    }
                 }
             }
 
