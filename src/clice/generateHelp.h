@@ -89,8 +89,18 @@ inline auto generatePartialSynopsis(ArgumentBase const& arg) -> std::string {
     for (auto child : arg.children) {
         ret += " " + generatePartialSynopsis(*child);
     }
-    auto typeAsString = typeToString(arg);
-    ret += typeAsString.empty()?"":(" " + typeAsString);
+    if (arg.id.empty()) {
+        auto typeAsString = typeToString(arg);
+        ret += typeAsString.empty()?"":(" " + typeAsString);
+    } else {
+        ret += " " + arg.id;
+    }
+
+    // remove spaaces at the beginning
+    while (!ret.empty() && ret.front() == ' ') {
+        ret.erase(ret.begin());
+    }
+    // suround parameter with [...] if it is an optional type
     if (!arg.tags.contains("required")) {
         ret = "[" + ret + "]";
     }
@@ -142,9 +152,17 @@ inline auto generateHelp() -> std::string {
     f = [&](auto const& args, std::string ind) {
         for (auto arg : args) {
             auto typeAsString = typeToString(*arg);
+            if (!arg->id.empty()) {
+                typeAsString = arg->id;
+            }
 
             auto argstr = fmt::format("{}{} {}", ind, fmt::join(arg->args, ", "), typeAsString);
             longestWord = std::max(longestWord, argstr.size());
+        }
+
+        for (auto arg : args) {
+            if (!arg->args.empty()) continue;
+            f(arg->children, ind + "  ");
         }
 
         for (auto arg : args) {
@@ -161,9 +179,29 @@ inline auto generateHelp() -> std::string {
     f = [&](auto const& args, std::string ind) {
 
         for (auto arg : args) {
+            if (!arg->args.empty()) continue;
+            auto typeAsString = typeToString(*arg);
+            if (!arg->id.empty()) {
+                typeAsString = arg->id;
+            }
+
+            auto tagstr = [&]() -> std::string {
+                if (arg->tags.contains("required")) return "(required)";
+                auto defaultValue = arg->toString();
+                if (!defaultValue) return "";
+                return fmt::format("(default: {})", *defaultValue);
+            }();
+
+            ret = ret + fmt::format("{:<{}} - {} {}\n", typeAsString, longestWord, arg->desc, tagstr);
+            f(arg->children, ind);
+        }
+
+        for (auto arg : args) {
             if (arg->args.empty() or arg->args[0][0] == '-') continue;
             auto typeAsString = typeToString(*arg);
-
+            if (!arg->id.empty()) {
+                typeAsString = arg->id;
+            }
             auto argstr = fmt::format("{}{} {}", ind, fmt::join(arg->args, ", "), typeAsString);
             auto tagstr = [&]() -> std::string {
                 if (arg->tags.contains("required")) return "(required)";
@@ -178,6 +216,9 @@ inline auto generateHelp() -> std::string {
         for (auto arg : args) {
             if (arg->args.empty() or arg->args[0][0] != '-') continue;
             auto typeAsString = typeToString(*arg);
+            if (!arg->id.empty()) {
+                typeAsString = arg->id;
+            }
 
             auto argstr = fmt::format("{}{} {}", ind, fmt::join(arg->args, ", "), typeAsString);
             auto tagstr = [&]() -> std::string {

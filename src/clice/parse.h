@@ -232,14 +232,14 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
         auto const& base = activeBases[activeBases.size()-j-1];
         if (!base->tags.contains("multi") && base->fromString) {
             auto param = createParameterStrList(base->args);
-            throw std::runtime_error{"option \"" + param + "\" is missing a value (2)"};
+            throw std::runtime_error{"option " + base->id + "\"" + param + "\" is missing a value (2)"};
         }
         for (auto child : base->children) {
             if (child->tags.contains("required")) {
                 if (std::ranges::find(activeBases, child) == activeBases.end()) {
                     auto option = createParameterStrList(base->args);
                     auto suboption = createParameterStrList(child->args);
-                    throw std::runtime_error{"option \"" + suboption + "\" is required (enforced by \"" + option + "\")"};
+                    throw std::runtime_error{"option " + child->id + "\"" + suboption + "\" is required (enforced by \"" + option + "\")"};
                 }
             }
         }
@@ -249,7 +249,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
         if (base->tags.contains("required")) {
             if (std::ranges::find(activeBases, base) == activeBases.end()) {
                 auto option = createParameterStrList(base->args);
-                throw std::runtime_error{"option \"" + option + "\" is a required parameter"};
+                throw std::runtime_error{"option " + base->id + " \"" + option + "\" is a required parameter"};
             }
         }
     }
