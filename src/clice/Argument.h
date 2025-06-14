@@ -25,15 +25,15 @@ inline std::string argv0; // Parser will fill this
 struct ArgumentBase {
     ArgumentBase*                           parent{};
     std::vector<std::string>                args;
+    std::string                             id;
     std::string                             desc;
     std::optional<std::vector<std::string>> mapping{};
     std::unordered_set<std::string>         tags;
     std::optional<std::string>              completion{};
     std::function<std::vector<std::string>()> completion_fn;
-    std::vector<ArgumentBase*>              arguments;  // child parameters
+    std::vector<ArgumentBase*>              children;  // child parameters
     bool                                    symlink{};  // a symlink for example to "slix-env" should actually call "slix env"
     std::type_index                         type_index;
-    std::vector<ArgumentBase*>              children;
 
     std::function<void()> init;
     std::function<void(std::string_view)>       fromString;
@@ -64,7 +64,7 @@ inline ArgumentBase::ArgumentBase(ArgumentBase* parent, std::type_index idx)
     , type_index{idx}
 {
     if (parent) {
-        parent->arguments.push_back(this);
+        parent->children.push_back(this);
     } else {
         Register::getInstance().arguments.push_back(this);
     }
@@ -72,11 +72,11 @@ inline ArgumentBase::ArgumentBase(ArgumentBase* parent, std::type_index idx)
 
 inline ArgumentBase::~ArgumentBase() {
     if (parent) {
-        auto& arguments = parent->arguments;
-        arguments.erase(std::remove(arguments.begin(), arguments.end(), this), arguments.end());
+        auto& children = parent->children;
+        children.erase(std::remove(children.begin(), children.end(), this), children.end());
     } else {
-        auto& arguments = Register::getInstance().arguments;
-        arguments.erase(std::remove(arguments.begin(), arguments.end(), this), arguments.end());
+        auto& children = Register::getInstance().arguments;
+        children.erase(std::remove(children.begin(), children.end(), this), children.end());
     }
 }
 
@@ -96,6 +96,7 @@ template <typename T = std::nullptr_t, typename T2L = std::nullptr_t, typename T
 struct Argument {
     Argument<T2L, T2R>*   parent{};
     ListOfStrings         args{};
+    std::string           id{}; // some identification, like <threadNbr>
     bool                  symlink{};
     std::string           desc{};
     bool                  isSet{};
@@ -150,10 +151,8 @@ struct Argument {
         CTor(Argument& desc)
             : arg { desc.parent?&desc.parent->storage.arg:nullptr, detectType()}
         {
-            if (arg.parent) {
-                arg.parent->children.push_back(&arg);
-            }
             arg.args    = desc.args;
+            arg.id      = desc.id;
             arg.symlink = desc.symlink;
             arg.desc    = desc.desc;
             if (desc.completion) {
@@ -178,7 +177,9 @@ struct Argument {
             }
             arg.tags = desc.tags;
             constexpr bool HasPushBack = requires {{ std::declval<T>().push_back(std::declval<typename T::value_type>()) }; };
-            if (HasPushBack && !std::same_as<std::string, T> && !std::same_as<std::filesystem::path, T>) {
+
+            bool isMulti = HasPushBack && !std::same_as<std::string, T> && !std::same_as<std::filesystem::path, T>;
+            if (isMulti) {
                 arg.tags.insert("multi");
             }
             arg.init = [&]() {

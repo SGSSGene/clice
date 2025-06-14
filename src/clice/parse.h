@@ -3,10 +3,12 @@
 #pragma once
 
 #include "Argument.h"
+#include "generateHelp.h"
 #include "printCompletion.h"
 
 #include <cassert>
 #include <fmt/format.h>
+#include <iostream>
 #include <list>
 #include <map>
 #include <span>
@@ -29,7 +31,7 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
 
     auto options = std::vector<std::tuple<std::string, std::string>>{};
     for (auto bases : activeBases) {
-        for (auto arg : bases->arguments) {
+        for (auto arg : bases->children) {
             if (!arg->args.empty()) {
                 options.emplace_back(arg->args[0], arg->desc);
             }
@@ -53,7 +55,7 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
 }
 }
 
-auto parse(int argc, char const* const* argv, bool allowSingleDash = false) -> std::optional<std::string>;
+auto parse(int argc, char const* const* argv, bool allowDashCombi = false) -> std::optional<std::string>;
 
 inline auto parseSingleDash(int _argc, char const* const* _argv) -> std::optional<std::string> {
     auto args   = std::list<std::string>{};
@@ -96,10 +98,10 @@ inline auto createParameterStrList(std::vector<std::string> const& args) -> std:
 
 
 /**
- * allowSingleDash: allows flags like "-a -b" be combined to "-ab"
+ * allowDashCombi: allows flags like "-a -b" be combined to "-ab"
  */
-inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> std::optional<std::string> {
-    if (allowSingleDash) {
+inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std::optional<std::string> {
+    if (allowDashCombi) {
         return parseSingleDash(argc, argv);
     }
 
@@ -141,7 +143,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
     };
 
     auto findActiveArg = [&](std::string_view str, ArgumentBase* base) -> ArgumentBase* {
-        for (auto arg : base->arguments) {
+        for (auto arg : base->children) {
             auto iter = std::find(arg->args.begin(), arg->args.end(), str);
             if (iter != arg->args.end() and arg->init) {
                 return arg;
@@ -167,7 +169,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
             // walk up the arguments, until one active argument has a child with fitting parameter
             for (size_t j{0}; j < activeBases.size(); ++j) {
                 auto const& base = activeBases[activeBases.size()-j-1];
-                if ((argv[i][0] != '-' or allTrailing or !base->tags.contains("multi")) and base->fromString) {
+                if (((argv[i][0] != '-' or allTrailing or !base->tags.contains("multi")) and base->fromString) and (!base->tags.contains("multi") || base->args.size()>0 || allTrailing)) {
                     base->fromString(argv[i]);
                     return;
                 }
@@ -182,7 +184,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
                         param += a + ", ";
                     }
                     param.pop_back(); param.pop_back();
-                    throw std::runtime_error{"option \"" + param + "\" is missing a value"};
+                    throw std::runtime_error{"option \"" + param + "\" is missing a value (1)"};
                 }
             }
             auto arg = findRootArg(argv[i]);
@@ -191,6 +193,35 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
                 activeBases.push_back(arg);
                 return;
             }
+            // check if an cli option without arguments exists
+            // first walk up active arguments
+            for (size_t j{0}; j < activeBases.size(); ++j) {
+                auto const& base = activeBases[activeBases.size()-j-1];
+                for (auto arg : base->children) {
+                    if (arg->args.empty() && arg->init) {
+                        arg->init();
+                        if (!arg->tags.contains("multi")) arg->init = nullptr;
+                        activeBases.push_back(arg);
+                        arg->fromString(argv[i]);
+                        return;
+                    }
+                }
+            }
+
+            // second check root arguments
+            for (auto arg : Register::getInstance().arguments) {
+                if (arg->args.empty()) {
+                    if (arg->init) {
+                        arg->init();
+                        if (!arg->tags.contains("multi")) arg->init = nullptr;
+
+                        activeBases.push_back(arg);
+                        arg->fromString(argv[i]);
+                        return;
+                    }
+                }
+            }
+
             throw std::runtime_error{std::string{"unexpected cli argument \""} + argv[i] + "\""};
         }();
     }
@@ -203,14 +234,14 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
         auto const& base = activeBases[activeBases.size()-j-1];
         if (!base->tags.contains("multi") && base->fromString) {
             auto param = createParameterStrList(base->args);
-            throw std::runtime_error{"option \"" + param + "\" is missing a value"};
+            throw std::runtime_error{"option " + base->id + "\"" + param + "\" is missing a value (2)"};
         }
         for (auto child : base->children) {
             if (child->tags.contains("required")) {
                 if (std::ranges::find(activeBases, child) == activeBases.end()) {
                     auto option = createParameterStrList(base->args);
                     auto suboption = createParameterStrList(child->args);
-                    throw std::runtime_error{"option \"" + suboption + "\" is required (enforced by \"" + option + "\")"};
+                    throw std::runtime_error{"option " + child->id + "\"" + suboption + "\" is required (enforced by \"" + option + "\")"};
                 }
             }
         }
@@ -220,7 +251,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
         if (base->tags.contains("required")) {
             if (std::ranges::find(activeBases, base) == activeBases.end()) {
                 auto option = createParameterStrList(base->args);
-                throw std::runtime_error{"option \"" + option + "\" is a required parameter"};
+                throw std::runtime_error{"option " + base->id + " \"" + option + "\" is a required parameter"};
             }
         }
     }
@@ -236,7 +267,7 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
                     arg->cb();
                 });
             }
-            f(arg->arguments);
+            f(arg->children);
         }
     };
     f(clice::Register::getInstance().arguments);
@@ -250,4 +281,55 @@ inline auto parse(int argc, char const* const* argv, bool allowSingleDash) -> st
     return std::nullopt;
 }
 
+struct Parse {
+    int argc;
+    char const* const* argv;
+    bool allowDashCombi{false};    // allows to combine "-a -b" into "-ab"
+    bool helpOpt{false};         // automatically registers --help option
+    bool catchExceptions{false}; // catches exception and prints them
+    std::function<void()> run;   // function to run
+};
+inline void parse(Parse const& parse) {
+    auto f = [&]() {
+        if (auto failed = clice::parse(parse.argc, parse.argv, parse.allowDashCombi); failed) {
+            std::cerr << "parsing failed: " << *failed << "\n";
+            std::exit(1);
+        }
+
+        if (parse.run) {
+            parse.run();
+        }
+    };
+
+    auto wrappedWithHelp = [&](auto cb) {
+        auto cliHelp    = clice::Argument{ .args   = {"-h", "--help"},
+                                           .desc   = "prints the help page",
+                                           .cb     = []{ std::cout << clice::generateHelp(); exit(0); },
+        };
+        cb();
+
+    };
+
+    if (parse.catchExceptions) {
+        try {
+            if (parse.helpOpt) {
+                wrappedWithHelp(f);
+            } else {
+                f();
+            }
+        } catch(std::exception const& e) {
+            std::cerr << "error: " << e.what() << "\n";
+            std::exit(1);
+        } catch(...) {
+            std::cerr << "unknown exception was thrown\n";
+            std::exit(1);
+        }
+    } else {
+        if (parse.helpOpt) {
+            wrappedWithHelp(f);
+        } else {
+            f();
+        }
+    }
+}
 }

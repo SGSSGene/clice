@@ -94,7 +94,7 @@ inline auto generateCWL(std::vector<std::string> subtool) -> tdl::ToolInfo {
                             .name        = a,
                             .description = arg->desc,
                             .tags        = {arg->tags.begin(), arg->tags.end()},
-                            .value       = f(arg->arguments),
+                            .value       = f(arg->children),
                         };
                         node.tags.insert("basecommand");
                         res.push_back(node);
@@ -120,8 +120,8 @@ inline auto generateCWL(std::vector<std::string> subtool) -> tdl::ToolInfo {
             }
 
             //!TODO a few more tags probably need to be converted here
-            if (arg->arguments.size()) {
-                node.value = f(arg->arguments);
+            if (arg->children.size()) {
+                node.value = f(arg->children);
             } else if (arg->mapping) { //!TODO only works for single values, produces wrong outputs for lists
                 node.value = tdl::StringValue{};
             } else if (isBoolType(arg->type_index)) {

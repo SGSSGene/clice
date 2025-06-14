@@ -31,6 +31,8 @@ jobs:
                                          gcc15-nosetup-cpp20-release
                                          gcc15-nosetup-cpp23-release
                                          gcc15-nosetup-cpp20-lcov
+            }
+          - {os: ubuntu-22.04, compiler: gcc15-setup_only
                                          gcc15-nosetup-cpp20-debug-sanitize_address
                                          gcc15-nosetup-cpp20-debug-sanitize_undefined
                                          gcc15-nosetup-cpp20-debug-sanitize_thread

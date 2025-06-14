@@ -12,6 +12,7 @@ auto cliHelp    = clice::Argument{ .args   = "--help",
 
 void generateCWL();
 auto cliCWL     = clice::Argument{ .args   = "--cwl-description",
+                                   .id     = "<files>...",
                                    .desc   = "prints a cwl-description of a certain subcommand",
                                    .value  = std::vector<std::string>{},
                                    .cb     = generateCWL,
@@ -35,18 +36,21 @@ auto cliAdd     = clice::Argument{ .args    = "add",
                                    .desc    = "adds some stuff",
                                  };
 auto cliVerbose = clice::Argument{ .parent = &cliAdd,
-                                   .args   = "--verbose",
+                                   .args   = {"-v", "--verbose"},
                                    .desc   = "detailed description of what is happening",
                                   };
 auto cliNbr     = clice::Argument{ .args   = "--nbr",
+                                   .id     = "<nbr>",
                                    .desc   = "setting some nbr",
                                    .value  = 5,
                                  };
 auto cliInts    = clice::Argument{ .args   = "--ints",
+                                   .id     = "<ints>...",
                                    .desc   = "a list of numbers",
                                    .value  = std::vector<int>{},
                                  };
 auto cliAuto    = clice::Argument{ .args   = "--auto",
+                                   .id     = "<int>",
                                    .desc   = "value depending on cliNbr +1",
                                    .value  = []() { return *cliNbr+1; },
                                    .cb     = []() {
@@ -54,6 +58,7 @@ auto cliAuto    = clice::Argument{ .args   = "--auto",
                                    }
                                  };
 auto cliAuto2   = clice::Argument{ .args   = "--auto2",
+                                   .id     = "<int>",
                                    .desc   = "same as --auto, but with lower priority",
                                    .value  = []() { return *cliNbr+1; },
                                    .cb     = []() {
@@ -63,6 +68,7 @@ auto cliAuto2   = clice::Argument{ .args   = "--auto2",
                                  };
 
 auto cliAuto3   = clice::Argument{ .args   = "--auto3",
+                                   .id     = "<int>",
                                    .desc   = "same as --auto, but with higher priority",
                                    .value  = []() { return *cliNbr+1; },
                                    .cb     = []() {
@@ -80,61 +86,73 @@ auto cliBTFlag     = clice::Argument{ .parent = &cliBasicTypes,
                                     };
 auto cliBTBool     = clice::Argument{ .parent = &cliBasicTypes,
                                       .args   = "--bool",
+                                      .id     = "<bool>",
                                       .desc   = "bool value",
                                       .value  = false,
                                     };
 auto cliBTUInt8   = clice::Argument{ .parent = &cliBasicTypes,
                                      .args   = "--uint8",
+                                     .id     = "<int>",
                                      .desc   = "uint8 value",
                                      .value  = uint8_t{},
                                    };
 auto cliBTInt8    = clice::Argument{ .parent = &cliBasicTypes,
                                      .args   = "--int8",
+                                     .id     = "<int>",
                                      .desc   = "int8 value",
                                      .value  = int8_t{},
                                    };
 auto cliBTUInt16   = clice::Argument{ .parent = &cliBasicTypes,
                                       .args   = "--uint16",
+                                      .id     = "<int>",
                                       .desc   = "uint16 value",
                                       .value  = uint16_t{},
                                    };
 auto cliBTInt16    = clice::Argument{ .parent = &cliBasicTypes,
                                       .args   = "--int16",
+                                      .id     = "<int>",
                                       .desc   = "int16 value",
                                       .value  = int16_t{},
                                    };
 auto cliBTUInt32   = clice::Argument{ .parent = &cliBasicTypes,
                                       .args   = "--uint32",
+                                      .id     = "<int>",
                                       .desc   = "uint32 value",
                                       .value  = uint32_t{},
                                    };
 auto cliBTInt32    = clice::Argument{ .parent = &cliBasicTypes,
                                       .args   = "--int32",
+                                      .id     = "<int>",
                                       .desc   = "int32 value",
                                       .value  = int32_t{},
                                    };
 auto cliBTUInt64   = clice::Argument{ .parent = &cliBasicTypes,
                                       .args   = "--uint64",
+                                      .id     = "<int>",
                                       .desc   = "uint64 value",
                                       .value  = uint64_t{},
                                    };
 auto cliBTInt64    = clice::Argument{ .parent = &cliBasicTypes,
                                       .args   = "--int64",
+                                      .id     = "<int>",
                                       .desc   = "int64 value",
                                       .value  = int64_t{},
                                     };
 auto cliBTChar    = clice::Argument{ .parent = &cliBasicTypes,
                                      .args   = "--char",
+                                      .id     = "<char>",
                                      .desc   = "char value",
                                      .value  = char{'A'},
                                     };
 auto cliBTString  = clice::Argument{ .parent = &cliBasicTypes,
                                      .args   = "--string",
+                                      .id     = "<word>",
                                      .desc   = "string value",
                                      .value  = std::string{},
                                     };
 auto cliBTMappedBool = clice::Argument{ .parent = &cliBasicTypes,
                                         .args   = "--mapped_bool",
+                                        .id     = "<qual>",
                                         .desc   = "takes \"good\" and \"bad\" as input",
                                         .value  = bool{},
                                         .mapping = {{{"good", true}, {"bad", false}}},
@@ -222,6 +240,24 @@ auto cliCompletionStaticString = clice::Argument{ .parent = &cliCompletion,
                                                   .completion = []() -> std::vector<std::string> { return {"foo", "bar", "faa"}; },
 };
 
+auto cliSingleTrailingArgument = clice::Argument{ .id = "<input1>",
+                                                  .desc   = "single trailing argument",
+                                                  .value = std::string{},
+};
+
+auto cliSingleTrailingArgumentPos2 = clice::Argument{ .parent = &cliSingleTrailingArgument,
+                                                      .id = "<input2>",
+                                                      .desc   = "single trailing argument at position 2",
+                                                      .value = std::string{},
+                                                      .tags = {"required"}
+};
+
+auto cliMultiTrailingArguments = clice::Argument{ .id    = "<inputs>...",
+                                                  .desc  = "multiple trailing arguments",
+                                                  .value = std::vector<std::string>{},
+};
+
+
 int main(int argc, char** argv) {
     try {
         if (auto failed = clice::parse(argc, argv, /*.allowDashCombi=*/true); failed) {
@@ -269,6 +305,12 @@ int main(int argc, char** argv) {
         std::cout << "    --opt2: " << cliRequiredOpt2 << " " << *cliRequiredOpt2 << "\n";
 
         std::cout << "\n\nalways_required: " << cliAlwaysRequired << "\n";
+
+        std::cout << "\n\nsingle trailing argument: " << *cliSingleTrailingArgument << " " << *cliSingleTrailingArgumentPos2 << "\n";
+        std::cout << "multiple trailing arguments: " << cliMultiTrailingArguments->size() << "\n";
+        for (auto s : *cliMultiTrailingArguments) {
+            std::cout << "  - " << s << "\n";
+        }
 
     } catch (std::exception const& e) {
         std::cerr << "error: " << e.what() << "\n";
