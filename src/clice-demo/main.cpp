@@ -29,7 +29,7 @@ void generateCWL() {
         .description    = "demonstration tool of clice options",
         .executableName = clice::argv0,
     };
-    std::cout << convertToCWL(toolInfo);
+    std::cout << convertToCWL(toolInfo) << "\n";
     exit(0);
 }
 

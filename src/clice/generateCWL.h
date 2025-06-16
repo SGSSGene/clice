@@ -105,7 +105,7 @@ inline auto generateCWL(std::vector<std::string> subtool) -> tdl::ToolInfo {
             }
 
             auto node = tdl::Node {
-                .name        = arg->args[0],
+                .name        = (arg->args.empty()?std::string{}:arg->args[0]),
                 .description = arg->desc,
                 .tags        = {arg->tags.begin(), arg->tags.end()},
                 .value       = tdl::StringValueList{},
@@ -140,13 +140,13 @@ inline auto generateCWL(std::vector<std::string> subtool) -> tdl::ToolInfo {
                 node.value = tdl::StringValueList{};
 
             } else {
-                std::cerr << "unknown on how to convert " + arg->args[0] + " from clice to tdl\n";
+                std::cerr << "unknown on how to convert " + arg->id + " from clice to tdl\n";
                 continue;
             }
 
             res.push_back(node);
             info.cliMapping.push_back({
-                .optionIdentifier = arg->args[0],
+                .optionIdentifier = (arg->args.empty()?std::string{}:arg->args[0]),
                 .referenceName    = node.name,
             });
         }
