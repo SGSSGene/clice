@@ -246,6 +246,41 @@ inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std
             }
         }
     }
+
+    // create list of all triggers according to priority
+    auto triggers = std::map<size_t, std::vector<std::tuple<clice::ArgumentBase*, std::function<void()>>>>{};
+    auto f = std::function<void(std::vector<clice::ArgumentBase*>)>{};
+    f = [&](auto const& args) {
+        for (auto arg : args) {
+            if (arg->cb) {
+                triggers[arg->cb_priority].emplace_back(arg, [=]() {
+                    arg->cb();
+                });
+            }
+            f(arg->children);
+        }
+    };
+    f(clice::Register::getInstance().arguments);
+
+    // trigger all calls that have a "ignore-required" tag
+    {
+        bool only_ignore = true;
+        for (auto const& [level, cbs] : triggers) {
+            for (auto const& [arg, cb] : cbs) {
+                if (!only_ignore && arg->tags.contains("ignore-required")) {
+                    throw std::runtime_error{"option " + arg->id + " could not run, since a higher priority option is missing a \"ignore-required\" tag"};
+                }
+                if (!arg->tags.contains("ignore-required")) {
+                    // do not execute any further callback
+                    only_ignore = false;
+                }
+                if (only_ignore) {
+                    cb();
+                }
+            }
+        }
+    }
+
     // check if all top level arguments got parameters
     for (auto base : Register::getInstance().arguments) {
         if (base->tags.contains("required")) {
@@ -257,24 +292,12 @@ inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std
     }
 
 
-    // create list of all triggers according to priority
-    auto triggers = std::map<size_t, std::vector<std::function<void()>>>{};
-    auto f = std::function<void(std::vector<clice::ArgumentBase*>)>{};
-    f = [&](auto const& args) {
-        for (auto arg : args) {
-            if (arg->cb) {
-                triggers[arg->cb_priority].emplace_back([=]() {
-                    arg->cb();
-                });
-            }
-            f(arg->children);
-        }
-    };
-    f(clice::Register::getInstance().arguments);
     // call triggers in priority level order
     for (auto const& [level, cbs] : triggers) {
-        for (auto const& cb : cbs) {
-            cb();
+        for (auto const& [arg, cb] : cbs) {
+            if (!arg->tags.contains("ignore-required")) {
+                cb();
+            }
         }
     }
 
@@ -305,6 +328,7 @@ inline void parse(Parse const& parse) {
         auto cliHelp    = clice::Argument{ .args   = {"-h", "--help"},
                                            .desc   = "prints the help page",
                                            .cb     = []{ std::cout << clice::generateHelp(); exit(0); },
+                                           .tags   = {"ignore-required"},
         };
         cb();
 

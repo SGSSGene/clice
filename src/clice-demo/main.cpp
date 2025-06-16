@@ -8,14 +8,16 @@ namespace {
 auto cliHelp    = clice::Argument{ .args   = "--help",
                                    .desc   = "prints the help page",
                                    .cb     = []{ std::cout << clice::generateHelp(); exit(0); },
+                                   .tags   = {"ignore-required"},
                                  };
 
 void generateCWL();
 auto cliCWL     = clice::Argument{ .args   = "--cwl-description",
-                                   .id     = "<files>...",
+                                   .id     = "<command>...",
                                    .desc   = "prints a cwl-description of a certain subcommand",
                                    .value  = std::vector<std::string>{},
                                    .cb     = generateCWL,
+                                   .tags   = {"ignore-required"},
                                  };
 void generateCWL() {
     auto toolInfo = clice::generateCWL(*cliCWL);
@@ -27,7 +29,7 @@ void generateCWL() {
         .description    = "demonstration tool of clice options",
         .executableName = clice::argv0,
     };
-    std::cout << convertToCWL(toolInfo);
+    std::cout << convertToCWL(toolInfo) << "\n";
     exit(0);
 }
 
