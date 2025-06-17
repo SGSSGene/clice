@@ -7,6 +7,7 @@
 #include "printCompletion.h"
 
 #include <cassert>
+#include <cstdlib>
 #include <fmt/format.h>
 #include <iostream>
 #include <list>
@@ -127,6 +128,32 @@ inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std
         printCompletion(gen);
         exit(0);
     }
+
+    // check environment variables first
+    {
+        using CB = std::function<void(ArgumentBase&, std::string)>;
+        auto visitAllArguments = std::function<void(std::vector<ArgumentBase*> const&, CB const&)>{};
+        visitAllArguments = [&](auto const& args, auto const& cb) {
+            for (auto arg : args) {
+                for (auto const& e : arg->env) {
+                    cb(*arg, e);
+                }
+                for (auto child : arg->children) {
+                    visitAllArguments(child->children, cb);
+                }
+            }
+        };
+        visitAllArguments(Register::getInstance().arguments, [&](ArgumentBase& arg, std::string env) {
+            if (auto ptr = std::getenv(env.c_str()); ptr) {
+                arg.init();
+                arg.fromString(std::string_view{ptr});
+            }
+        });
+    }
+
+
+    // parse argc/argv
+
 
     auto activeBases = std::vector<ArgumentBase*>{}; // current commands whos sub arguments are of interest;
 
@@ -312,6 +339,7 @@ struct Parse {
     bool catchExceptions{false}; // catches exception and prints them
     std::function<void()> run;   // function to run
 };
+
 inline void parse(Parse const& parse) {
     auto f = [&]() {
         if (auto failed = clice::parse(parse.argc, parse.argv, parse.allowDashCombi); failed) {

@@ -260,6 +260,12 @@ auto cliMultiTrailingArguments = clice::Argument{ .id    = "<inputs>...",
                                                   .value = std::vector<std::string>{},
 };
 
+auto cliEnvVariable = clice::Argument{ .args = {"--variable"},
+                                       .env   = {"VARIABLE"},
+                                       .id    = "Name",
+                                       .value = std::string{}
+};
+
 
 int main(int argc, char** argv) {
     try {
@@ -314,6 +320,8 @@ int main(int argc, char** argv) {
         for (auto s : *cliMultiTrailingArguments) {
             std::cout << "  - " << s << "\n";
         }
+
+        std::cout << "\n\nEnvironment VARIABLE: " << cliEnvVariable << " " << *cliEnvVariable << "\n";
 
     } catch (std::exception const& e) {
         std::cerr << "error: " << e.what() << "\n";

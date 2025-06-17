@@ -26,6 +26,7 @@ inline std::string argv0; // Parser will fill this
 struct ArgumentBase {
     ArgumentBase*                           parent{};
     std::vector<std::string>                args;
+    std::vector<std::string>                env;
     std::string                             id;
     std::string                             desc;
     std::optional<std::vector<std::string>> mapping{};
@@ -97,6 +98,7 @@ template <typename T = std::nullptr_t, typename T2L = std::nullptr_t, typename T
 struct Argument {
     Argument<T2L, T2R>*   parent{};
     ListOfStrings         args{};
+    ListOfStrings         env{};
     std::string           id{}; // some identification, like <threadNbr>
     bool                  symlink{};
     std::string           desc{};
@@ -147,6 +149,7 @@ struct Argument {
             : arg { desc.parent?&desc.parent->storage.arg:nullptr, detectType()}
         {
             arg.args    = desc.args;
+            arg.env     = desc.env;
             arg.id      = desc.id;
             arg.symlink = desc.symlink;
             arg.desc    = desc.desc;
