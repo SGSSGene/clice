@@ -235,7 +235,7 @@ inline auto generateHelp() -> std::string {
             }();
             ret = ret + fmt::format("{:<{}} - {} {}\n", argstr, longestWord, arg->desc, tagstr);
             if (!arg->env.empty()) {
-                ret = ret + fmt::format("{:<{}}   environment variable {}", "", longestWord, fmt::join(arg->env, ", "));
+                ret = ret + fmt::format("{:<{}}   environment variable {}\n", "", longestWord, fmt::join(arg->env, ", "));
             }
 
             f(arg->children, ind + "  ");
