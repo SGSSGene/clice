@@ -263,6 +263,13 @@ auto cliMultiTrailingArguments = clice::Argument{ .id    = "<inputs>...",
 auto cliEnvVariable = clice::Argument{ .args = {"--variable"},
                                        .env   = {"VARIABLE"},
                                        .id    = "Name",
+                                       .desc  = "a variable that can also be set via environment variable",
+                                       .value = std::string{}
+};
+
+auto cliEnvVariable2 = clice::Argument{.env   = {"VARIABLE2"},
+                                       .id    = "Name",
+                                       .desc  = "a variable that can also be set as an environment variable",
                                        .value = std::string{}
 };
 
@@ -322,6 +329,7 @@ int main(int argc, char** argv) {
         }
 
         std::cout << "\n\nEnvironment VARIABLE: " << cliEnvVariable << " " << *cliEnvVariable << "\n";
+        std::cout << "\n\nEnvironment VARIABLE: " << cliEnvVariable2 << " " << *cliEnvVariable2 << "\n";
 
     } catch (std::exception const& e) {
         std::cerr << "error: " << e.what() << "\n";
