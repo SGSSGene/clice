@@ -7,20 +7,13 @@
 namespace {
 auto cliHelp    = clice::Argument{ .args   = "--help",
                                    .desc   = "prints the help page",
-                                   .cb     = []{ std::cout << clice::generateHelp(); exit(0); },
+                                   .cb     = [](){ std::cout << clice::generateHelp(); exit(0); },
                                    .tags   = {"ignore-required"},
                                  };
 
-void generateCWL();
-auto cliCWL     = clice::Argument{ .args   = "--cwl-description",
-                                   .id     = "<command>...",
-                                   .desc   = "prints a cwl-description of a certain subcommand",
-                                   .value  = std::vector<std::string>{},
-                                   .cb     = generateCWL,
-                                   .tags   = {"ignore-required"},
-                                 };
-void generateCWL() {
-    auto toolInfo = clice::generateCWL(*cliCWL);
+
+void generateCWL(std::vector<std::string> const& commands) {
+    auto toolInfo = clice::generateCWL(commands);
     toolInfo.metaInfo = {
         .version        = "0.0.1",
         .name           = "clice-demo",
@@ -32,6 +25,14 @@ void generateCWL() {
     std::cout << convertToCWL(toolInfo) << "\n";
     exit(0);
 }
+
+auto cliCWL     = clice::Argument{ .args   = "--cwl-description",
+                                   .id     = "<command>...",
+                                   .desc   = "prints a cwl-description of a certain subcommand",
+                                   .value  = std::vector<std::string>{},
+                                   .cb     = generateCWL,
+                                   .tags   = {"ignore-required"},
+                                 };
 
 auto cliAdd     = clice::Argument{ .args    = "add",
                                    .symlink = true, // allows access via symlink to clice-demo-add
@@ -55,7 +56,7 @@ auto cliAuto    = clice::Argument{ .args   = "--auto",
                                    .id     = "<int>",
                                    .desc   = "value depending on cliNbr +1",
                                    .value  = []() { return *cliNbr+1; },
-                                   .cb     = []() {
+                                   .cb     = [](auto const&) {
                                         std::cout << "done\n";
                                    }
                                  };
@@ -63,7 +64,7 @@ auto cliAuto2   = clice::Argument{ .args   = "--auto2",
                                    .id     = "<int>",
                                    .desc   = "same as --auto, but with lower priority",
                                    .value  = []() { return *cliNbr+1; },
-                                   .cb     = []() {
+                                   .cb     = [](auto const&) {
                                         std::cout << "auto2 done, after auto\n";
                                    },
                                    .cb_priority = 200,
@@ -73,7 +74,7 @@ auto cliAuto3   = clice::Argument{ .args   = "--auto3",
                                    .id     = "<int>",
                                    .desc   = "same as --auto, but with higher priority",
                                    .value  = []() { return *cliNbr+1; },
-                                   .cb     = []() {
+                                   .cb     = [](auto const&) {
                                         std::cout << "auto3 done, before auto\n";
                                    },
                                    .cb_priority = 50,

@@ -327,7 +327,7 @@ inline void parse(Parse const& parse) {
     auto wrappedWithHelp = [&](auto cb) {
         auto cliHelp    = clice::Argument{ .args   = {"-h", "--help"},
                                            .desc   = "prints the help page",
-                                           .cb     = []{ std::cout << clice::generateHelp(); exit(0); },
+                                           .cb     = [](){ std::cout << generateHelp(); exit(0); },
                                            .tags   = {"ignore-required"},
         };
         cb();
