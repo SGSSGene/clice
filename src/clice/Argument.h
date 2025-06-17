@@ -16,6 +16,7 @@
 #include <typeindex>
 #include <typeinfo>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace clice {
@@ -25,6 +26,7 @@ inline std::string argv0; // Parser will fill this
 struct ArgumentBase {
     ArgumentBase*                           parent{};
     std::vector<std::string>                args;
+    std::vector<std::string>                env;
     std::string                             id;
     std::string                             desc;
     std::optional<std::vector<std::string>> mapping{};
@@ -92,10 +94,11 @@ struct ListOfStrings : std::vector<std::string> {
     }
 };
 
-template <typename T = std::nullptr_t, typename T2L = std::nullptr_t, typename T2R = std::nullptr_t>
+template <typename T = std::nullptr_t, typename T2L = std::nullptr_t, typename T2R = std::nullptr_t, typename CBType = std::function<void()>>
 struct Argument {
     Argument<T2L, T2R>*   parent{};
     ListOfStrings         args{};
+    ListOfStrings         env{};
     std::string           id{}; // some identification, like <threadNbr>
     bool                  symlink{};
     std::string           desc{};
@@ -103,7 +106,7 @@ struct Argument {
     T                     value{};
     mutable std::any      anyType{}; // used if T is a callback
     std::function<std::vector<std::string>()> completion{};
-    std::function<void()> cb{};
+    CBType cb{};
     size_t                                            cb_priority{100}; // lower priorities will be triggered before larger ones
     std::optional<std::unordered_map<std::string, T>> mapping{};
     std::unordered_set<std::string>                   tags{};  // known tags "required"
@@ -133,12 +136,6 @@ struct Argument {
         return &r;
     }
 
-    template <typename CB>
-    auto run(CB _cb) -> std::nullptr_t {
-        cb = _cb;
-        return nullptr;
-    }
-
     struct CTor {
         ArgumentBase arg;
         static auto detectType() -> std::type_index {
@@ -152,6 +149,7 @@ struct Argument {
             : arg { desc.parent?&desc.parent->storage.arg:nullptr, detectType()}
         {
             arg.args    = desc.args;
+            arg.env     = desc.env;
             arg.id      = desc.id;
             arg.symlink = desc.symlink;
             arg.desc    = desc.desc;
@@ -184,7 +182,15 @@ struct Argument {
             }
             arg.init = [&]() {
                 desc.isSet = true;
-                arg.cb = desc.cb;
+                if constexpr (std::same_as<T, std::nullptr_t>) {
+                    arg.cb = desc.cb;
+                } else if constexpr (requires() {
+                    { desc.cb(*desc) };
+                }) {
+                    arg.cb = [&]() {
+                        desc.cb(*desc);
+                    };
+                }
                 arg.cb_priority = desc.cb_priority;
                 if constexpr (std::same_as<std::nullptr_t, T>) {
                 } else if constexpr (std::is_arithmetic_v<T>

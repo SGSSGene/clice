@@ -140,8 +140,10 @@ inline auto generateSplitSynopsis() -> std::string {
 inline auto generateHelp() -> std::string {
     auto ret = std::string{};
 
-    ret = generateSynopsis() + "\n\n";
-    ret = generateSplitSynopsis() + "\n\n";
+    ret = fmt::format("Usage:\n");
+    ret += generateSynopsis() + "\n\n";
+    ret += fmt::format("Subcommand usage:\n");
+    ret = ret + generateSplitSynopsis();
 
     auto& args = clice::Register::getInstance().arguments;
 
@@ -175,6 +177,10 @@ inline auto generateHelp() -> std::string {
         }
     };
     f(args, "");
+
+    if (longestWord > 0) {
+        ret += "\n\nOptions:\n";
+    }
 
     f = [&](auto const& args, std::string ind) {
 
@@ -228,10 +234,55 @@ inline auto generateHelp() -> std::string {
                 return fmt::format("(default: {})", *defaultValue);
             }();
             ret = ret + fmt::format("{:<{}} - {} {}\n", argstr, longestWord, arg->desc, tagstr);
+            if (!arg->env.empty()) {
+                ret = ret + fmt::format("{:<{}}   environment variable {}\n", "", longestWord, fmt::join(arg->env, ", "));
+            }
+
             f(arg->children, ind + "  ");
         }
     };
     f(args, "");
+
+    // print environment variables
+    {
+        // collect all argument bases with environment variables
+        auto bases = std::vector<ArgumentBase*>{};
+        auto visitAllArguments = std::function<void(std::vector<ArgumentBase*> const&)>{};
+        visitAllArguments = [&](auto const& args) {
+            for (auto arg : args) {
+                if (arg->env.size()) {
+                    bases.push_back(arg);
+                }
+                for (auto child : arg->children) {
+                    visitAllArguments(child->children);
+                }
+            }
+        };
+        visitAllArguments(Register::getInstance().arguments);
+
+        if (bases.size()) {
+            ret += "\n\nEnvironment Variables:\n";
+
+            for (auto arg : bases) {
+                std::string env;
+                auto env_str = fmt::format("{}", fmt::join(arg->env, ", "));
+                if (arg->args.empty()) {
+                    auto tagstr = [&]() -> std::string {
+                        if (arg->tags.contains("required")) return "(required)";
+                        auto defaultValue = arg->toString();
+                        if (!defaultValue) return "";
+                        return fmt::format("(default: {})", *defaultValue);
+                    }();
+
+                    ret = ret + fmt::format("{:<{}} - {} {}\n", env_str, longestWord, arg->desc, tagstr);
+                } else {
+                    auto arg_str = fmt::format("{}", fmt::join(arg->args, ", "));
+                    ret = ret + fmt::format("{:<{}} - same as {}\n", env_str, longestWord, arg_str);
+                }
+            }
+        }
+    }
+
     return ret;
 }
 }
