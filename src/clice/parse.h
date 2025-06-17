@@ -332,9 +332,9 @@ inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std
 }
 
 struct Parse {
-    int argc;
-    char const* const* argv;
-    bool allowDashCombi{false};    // allows to combine "-a -b" into "-ab"
+    std::tuple<int, char const* const*> args;
+    std::string desc;            // description of the tool
+    bool allowDashCombi{false};  // allows to combine "-a -b" into "-ab"
     bool helpOpt{false};         // automatically registers --help option
     bool catchExceptions{false}; // catches exception and prints them
     std::function<void()> run;   // function to run
@@ -342,7 +342,8 @@ struct Parse {
 
 inline void parse(Parse const& parse) {
     auto f = [&]() {
-        if (auto failed = clice::parse(parse.argc, parse.argv, parse.allowDashCombi); failed) {
+        auto [argc, argv] = parse.args;
+        if (auto failed = clice::parse(argc, argv, parse.allowDashCombi); failed) {
             std::cerr << "parsing failed: " << *failed << "\n";
             std::exit(1);
         }
@@ -355,7 +356,12 @@ inline void parse(Parse const& parse) {
     auto wrappedWithHelp = [&](auto cb) {
         auto cliHelp    = clice::Argument{ .args   = {"-h", "--help"},
                                            .desc   = "prints the help page",
-                                           .cb     = [](){ std::cout << generateHelp(); exit(0); },
+                                           .cb     = [&](){
+                                                if (parse.desc.size()) {
+                                                    std::cout << parse.desc << "\n\n";
+                                                }
+                                                std::cout << generateHelp(); exit(0);
+                                            },
                                            .tags   = {"ignore-required"},
         };
         cb();

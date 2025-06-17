@@ -14,8 +14,8 @@ auto cliNbr     = clice::Argument{ .args   = {"-n", "--nbr"},
 }
 int main(int argc, char** argv) {
     clice::parse({
-        .argc = argc,
-        .argv = argv,
+        .args            = {argc, argv},
+        .desc            = "demonstration of clice::parse function",
         .allowDashCombi  = true, // default false, -a -b -> -ab
         .helpOpt         = true, // default false, registers a --help option and generates help page
         .catchExceptions = true, // default false, catches exceptions and prints them to the command line and exists with code 1
