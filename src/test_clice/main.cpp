@@ -151,6 +151,5 @@ TEST_CASE("check clice::Argument", "argument") {
             CHECK(cliOpt1);
             CHECK(*cliOpt1 == std::vector<int>{3, 5, 7, 100, 1000, 2, -7});
         }
-
     }
 }
