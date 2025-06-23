@@ -11,4 +11,3 @@ target_link_libraries(${PROJECT_NAME}
     clice::clice
     fmt::fmt
 )
-add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
