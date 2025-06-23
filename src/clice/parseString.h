@@ -14,33 +14,72 @@
 namespace clice {
 
 template <uint64_t maxValue, typename T>
-auto parseSuffixHelper(std::string str, std::string_view suffix) -> T {
+auto parseSuffixHelper(std::string_view str, std::string_view suffix) -> T {
     if (str != suffix) {
         return 1;
     }
-    if constexpr (maxValue >= uint64_t(std::numeric_limits<T>::max())) {
+    if constexpr (maxValue > uint64_t(std::numeric_limits<T>::max())) {
         throw std::runtime_error{"out of range"};
     } else {
         return maxValue;
     }
 }
 
+template <long double maxValue, typename T>
+auto parseSuffixHelper_l(std::string_view str, std::string_view suffix) -> T {
+    if (str != suffix) {
+        return 1;
+    }
+    if constexpr (maxValue > (long double)(std::numeric_limits<T>::max())) {
+        throw std::runtime_error{"out of range"};
+    } else {
+        return maxValue;
+    }
+}
+
+
 template<typename T>
 auto parseSuffix(std::string_view suffix) -> std::optional<T> {
-    auto ret = 1
-        * parseSuffixHelper<1000, T>("k", suffix)
-        * parseSuffixHelper<1024, T>("ki", suffix)
-        * parseSuffixHelper<1000*1000, T>("m", suffix)
-        * parseSuffixHelper<1024*1024, T>("mi", suffix)
-        * parseSuffixHelper<1000*1000*1000, T>("g", suffix)
-        * parseSuffixHelper<1024*1024*1024, T>("gi", suffix)
-        * parseSuffixHelper<1000ull*1000*1000*1000, T>("t", suffix)
-        * parseSuffixHelper<1024ull*1024*1024*1024, T>("ti", suffix)
-        * parseSuffixHelper<1000ull*1000*1000*1000*1000, T>("p", suffix)
-        * parseSuffixHelper<1024ull*1024*1024*1024*1024, T>("pi", suffix)
-        * parseSuffixHelper<1000ull*1000*1000*1000*1000*1000, T>("e", suffix)
-        * parseSuffixHelper<1024ull*1024*1024*1024*1024*1024, T>("ei", suffix)
-    ;
+    auto ret = T{1};
+
+    if constexpr (std::floating_point<T>) {
+        ret = ret
+            * parseSuffixHelper_l<1000.L, T>("k", suffix)
+            * parseSuffixHelper_l<1024.L, T>("ki", suffix)
+            * parseSuffixHelper_l<1000.L*1000, T>("M", suffix)
+            * parseSuffixHelper_l<1024.L*1024, T>("Mi", suffix)
+            * parseSuffixHelper_l<1000.L*1000*1000, T>("G", suffix)
+            * parseSuffixHelper_l<1024.L*1024*1024, T>("Gi", suffix)
+            * parseSuffixHelper_l<1000.L*1000*1000*1000, T>("T", suffix)
+            * parseSuffixHelper_l<1024.L*1024*1024*1024, T>("Ti", suffix)
+            * parseSuffixHelper_l<1000.L*1000*1000*1000*1000, T>("P", suffix)
+            * parseSuffixHelper_l<1024.L*1024*1024*1024*1024, T>("Pi", suffix)
+            * parseSuffixHelper_l<1000.L*1000*1000*1000*1000*1000, T>("E", suffix)
+            * parseSuffixHelper_l<1024.L*1024*1024*1024*1024*1024, T>("Ei", suffix)
+
+            * parseSuffixHelper_l<0.1L, T>("d", suffix)
+            * parseSuffixHelper_l<0.01L, T>("c", suffix)
+            * parseSuffixHelper_l<0.001L, T>("m", suffix)
+            * parseSuffixHelper_l<0.000'001L, T>("u", suffix)
+            * parseSuffixHelper_l<0.000'000'001L, T>("n", suffix)
+            * parseSuffixHelper_l<0.000'000'000'001L, T>("p", suffix)
+        ;
+    } else {
+        ret = ret
+            * parseSuffixHelper<1000, T>("k", suffix)
+            * parseSuffixHelper<1024, T>("ki", suffix)
+            * parseSuffixHelper<1000*1000, T>("M", suffix)
+            * parseSuffixHelper<1024*1024, T>("Mi", suffix)
+            * parseSuffixHelper<1000*1000*1000, T>("G", suffix)
+            * parseSuffixHelper<1024*1024*1024, T>("Gi", suffix)
+            * parseSuffixHelper<1000ull*1000*1000*1000, T>("T", suffix)
+            * parseSuffixHelper<1024ull*1024*1024*1024, T>("Ti", suffix)
+            * parseSuffixHelper<1000ull*1000*1000*1000*1000, T>("P", suffix)
+            * parseSuffixHelper<1024ull*1024*1024*1024*1024, T>("Pi", suffix)
+            * parseSuffixHelper<1000ull*1000*1000*1000*1000*1000, T>("E", suffix)
+            * parseSuffixHelper<1024ull*1024*1024*1024*1024*1024, T>("Ei", suffix)
+        ;
+    }
     if (ret == 1) {
         return std::nullopt;
     }
@@ -71,8 +110,8 @@ auto parseFromString(std::string_view _str) -> T {
     } else if constexpr (std::numeric_limits<T>::is_exact) {
         // parse all integer-like types
         auto ret = T{};
-        std::ranges::transform(str, str.begin(), ::tolower);
-        // remove separator '
+
+        // remove potential ' separator
         str.erase(std::remove(str.begin(), str.end(), '\''), str.end());
 
         auto base = int{0};
@@ -114,32 +153,52 @@ auto parseFromString(std::string_view _str) -> T {
             throw std::runtime_error{std::string{"error parsing cli"}};
         }
         return T(ret);
+    } else if constexpr (std::floating_point<T>) {
+        // remove potential ' separator
+        str.erase(std::remove(str.begin(), str.end(), '\''), str.end());
 
+        auto ret = T{};
+        auto ss = std::stringstream{str};
+        if (not (ss >> ret)) {
+            throw std::runtime_error{std::string{"error parsing cli"}};
+        }
+        // parse floats/doubles and convert if they are angles or have other suffices
+        if (not ss.eof()) {
+            auto ending = std::string{};
+            if (not (ss >> ending)) {
+                throw std::runtime_error{std::string{"invalid string \""} + str + "\""};
+            }
+            if (ending.ends_with("rad")) {
+                ending = ending.substr(0, ending.size()-3);
+            } else if (ending.ends_with("deg")) {
+                ret = ret / 180. * std::numbers::pi;
+                ending = ending.substr(0, ending.size()-3);
+            } else if (ending.ends_with("pi") or ending.ends_with("π")) {
+                ret = ret * std::numbers::pi;
+                ending = ending.substr(0, ending.size()-2);
+            } else if (ending.ends_with("tau") or ending.ends_with("τ")) {
+                ret = ret * 2. * std::numbers::pi;
+                if (ending.ends_with("tau")) {
+                    ending = ending.substr(0, ending.size()-3);
+                } else {
+                    ending = ending.substr(0, ending.size()-2);
+                }
+            }
+            if (ending.size()) {
+                auto value = parseSuffix<T>(ending);
+                if (!value) {
+                    throw std::runtime_error{std::string{"unknown floating-point suffix \""} + str + "\""};
+                }
+                ret = ret * value.value();
+            }
+        }
+        return ret;
     } else {
         // parse everything else
         auto ret = T{};
         auto ss = std::stringstream{str};
         if (not (ss >> ret)) {
             throw std::runtime_error{std::string{"error parsing cli"}};
-        }
-        // parse floats/doubles and convert if they are angles
-        if constexpr (std::is_floating_point_v<T>) {
-            if (not ss.eof()) {
-                auto ending = std::string{};
-                if (not (ss >> ending)) {
-                    throw std::runtime_error{std::string{"invalid string \""} + str + "\""};
-                }
-                if (ending == "rad") {
-                } else if (ending == "deg") {
-                    ret = ret / 180. * std::numbers::pi;
-                } else if (ending == "pi" or ending == "π") {
-                    ret = ret * std::numbers::pi;
-                } else if (ending == "tau" or ending == "τ") {
-                    ret = ret * 2. * std::numbers::pi;
-                } else {
-                    throw std::runtime_error{std::string{"unknown suffix \""} + str + "\""};
-                }
-            }
         }
 
         if (not ss.eof()) {

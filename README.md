@@ -15,6 +15,7 @@ auto cliOpt = clice::Argument{ .parent      = &otherOption,          // A pointe
                                .id          = "file_nbr",            // For help age (and similar), a name for the value given
                                .desc        = "some thing required", // Description, used for help page (and similar)
                                .value       = size_t{0},             // Value type and default value
+                               .suffix      = "s",                   // Default: std::nullopt, enforces some suffix to be attached to this value
                                .completion  = my_complete,           // A function that returns possible values for completion
                                .cb          = onAvailable,           // This function is being triggered at the end of the parsing step, if the value of this option was given
                                .cb_priority = 100,                   // to order multiple arguments, lower value is being run before the others (default 100)
