@@ -206,5 +206,4 @@ TEST_CASE("check clice::Argument", "argument") {
 
         static_assert(dereferencable<decltype(cliOpt1)>, "check that cliOpt1 can be dereferenced");
     }
-
 }

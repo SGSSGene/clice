@@ -98,7 +98,8 @@ int main(int argc, char** argv) {
         }
     });
     return 0;
-}```
+}
+```
 
 # Bash/Zsh completion
 Just run `eval "$(CLICE_GENERATE_COMPLETION=$$ ./clice-demo)"` and enjoy
