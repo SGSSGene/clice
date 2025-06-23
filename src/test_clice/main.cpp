@@ -217,4 +217,15 @@ TEST_CASE("check clice::Argument", "argument") {
         CHECK(cliOpt1);
         CHECK(*cliOpt1 == std::vector<int>{});
     }
+
+    SECTION("arguments with magnitude suffix") {
+        auto cliOpt1 = clice::Argument{ .args   = "--opt1",
+                                        .value  = std::vector<size_t>{}};
+
+
+        auto args = std::vector<std::string_view>{"app", "--opt1", "15M", "16k", "16ki", "1'024Gi"};
+        clice::parse(args);
+        CHECK(cliOpt1);
+        CHECK(*cliOpt1 == std::vector<size_t>{15*1000*1000, 16*1000, 16*1024, 1024ull * 1024 * 1024 * 1024});
+    }
 }

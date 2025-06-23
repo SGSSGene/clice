@@ -30,16 +30,16 @@ auto parseSuffix(std::string_view suffix) -> std::optional<T> {
     auto ret = 1
         * parseSuffixHelper<1000, T>("k", suffix)
         * parseSuffixHelper<1024, T>("ki", suffix)
-        * parseSuffixHelper<1000*1000, T>("m", suffix)
-        * parseSuffixHelper<1024*1024, T>("mi", suffix)
-        * parseSuffixHelper<1000*1000*1000, T>("g", suffix)
-        * parseSuffixHelper<1024*1024*1024, T>("gi", suffix)
-        * parseSuffixHelper<1000ull*1000*1000*1000, T>("t", suffix)
-        * parseSuffixHelper<1024ull*1024*1024*1024, T>("ti", suffix)
-        * parseSuffixHelper<1000ull*1000*1000*1000*1000, T>("p", suffix)
-        * parseSuffixHelper<1024ull*1024*1024*1024*1024, T>("pi", suffix)
-        * parseSuffixHelper<1000ull*1000*1000*1000*1000*1000, T>("e", suffix)
-        * parseSuffixHelper<1024ull*1024*1024*1024*1024*1024, T>("ei", suffix)
+        * parseSuffixHelper<1000*1000, T>("M", suffix)
+        * parseSuffixHelper<1024*1024, T>("Mi", suffix)
+        * parseSuffixHelper<1000*1000*1000, T>("G", suffix)
+        * parseSuffixHelper<1024*1024*1024, T>("Gi", suffix)
+        * parseSuffixHelper<1000ull*1000*1000*1000, T>("T", suffix)
+        * parseSuffixHelper<1024ull*1024*1024*1024, T>("Ti", suffix)
+        * parseSuffixHelper<1000ull*1000*1000*1000*1000, T>("P", suffix)
+        * parseSuffixHelper<1024ull*1024*1024*1024*1024, T>("Pi", suffix)
+        * parseSuffixHelper<1000ull*1000*1000*1000*1000*1000, T>("E", suffix)
+        * parseSuffixHelper<1024ull*1024*1024*1024*1024*1024, T>("Ei", suffix)
     ;
     if (ret == 1) {
         return std::nullopt;
@@ -71,8 +71,8 @@ auto parseFromString(std::string_view _str) -> T {
     } else if constexpr (std::numeric_limits<T>::is_exact) {
         // parse all integer-like types
         auto ret = T{};
-        std::ranges::transform(str, str.begin(), ::tolower);
-        // remove separator '
+
+        // remove potential ' separator
         str.erase(std::remove(str.begin(), str.end(), '\''), str.end());
 
         auto base = int{0};

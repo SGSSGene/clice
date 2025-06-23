@@ -96,15 +96,16 @@ struct ListOfStrings : std::vector<std::string> {
 
 template <typename T = std::nullptr_t, typename T2L = std::nullptr_t, typename T2R = std::nullptr_t, typename CBType = std::function<void()>>
 struct Argument {
-    Argument<T2L, T2R>*   parent{};
-    ListOfStrings         args{};
-    ListOfStrings         env{};
-    std::string           id{}; // some identification, like <threadNbr>
-    bool                  symlink{};
-    std::string           desc{};
-    bool                  isSet{};   // (not for the user)
-    T                     value{};
-    mutable std::any      anyType{}; // used if T is a callback (not for the user)
+    Argument<T2L, T2R>*        parent{};
+    ListOfStrings              args{};
+    ListOfStrings              env{};
+    std::string                id{}; // some identification, like <threadNbr>
+    bool                       symlink{};
+    std::string                desc{};
+    bool                       isSet{};   // (not for the user)
+    T                          value{};
+    std::optional<std::string> suffix;          // require a suffix like "b" (bytes) or "s" (seconds)
+    mutable std::any           anyType{}; // used if T is a callback (not for the user)
     std::function<std::vector<std::string>()> completion{};
     CBType cb{};
     size_t                                            cb_priority{100}; // lower priorities will be triggered before larger ones
