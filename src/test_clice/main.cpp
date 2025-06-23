@@ -246,4 +246,24 @@ TEST_CASE("check clice::Argument", "argument") {
         }
     }
 
+    SECTION("arguments with magnitude suffix - floats") {
+        auto cliOpt1 = clice::Argument{ .args   = "--time",
+                                        .value  = std::vector<double>{},
+                                        .suffix = "s"
+                                        };
+
+
+        auto args = std::vector<std::string_view>{"app", "--time", "15Ms", "16ks", "16kis", "1'024Gis", "10ms", "20.2us", "1.25ns"};
+        clice::parse(args);
+        CHECK(cliOpt1);
+        auto expected = std::vector<double>{15*1000*1000, 16*1000, 16*1024, 1024ull * 1024 * 1024 * 1024, 0.01, 0.0000202, 0.00000000125};
+        REQUIRE(cliOpt1->size() == expected.size());
+        for (size_t i{0}; i < expected.size(); ++i) {
+            INFO(i);
+            INFO(expected[i] - cliOpt1->at(i));
+            CHECK(expected[i] == cliOpt1->at(i));
+        }
+    }
+
+
 }
