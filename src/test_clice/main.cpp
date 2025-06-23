@@ -154,4 +154,57 @@ TEST_CASE("check clice::Argument", "argument") {
             CHECK(*cliOpt1 == std::vector<int>{3, 5, 7, 100, 1000, 2, -7});
         }
     }
+
+    SECTION("test position argument") {
+        auto cliOpt1 = clice::Argument{ .value  = int{7}};
+
+        SECTION("no parse: no option set") {
+            CHECK(!cliOpt1);
+            CHECK(*cliOpt1 == 7); // should have default value
+        }
+
+        SECTION("parse: but no --opt1 option set") {
+            auto args = std::vector<std::string_view>{"app"};
+            clice::parse(args);
+            CHECK(!cliOpt1);
+            CHECK(*cliOpt1 == 7); // should have default value
+        }
+
+        SECTION("parse with --opt1 option") {
+            auto args = std::vector<std::string_view>{"app", "12"};
+            clice::parse(args);
+            CHECK(cliOpt1);
+            CHECK(*cliOpt1 == 12);
+        }
+
+        static_assert(dereferencable<decltype(cliOpt1)>, "check that cliOpt1 can be dereferenced");
+    }
+
+    SECTION("test position argument - but it takes also an environment variable") {
+        auto cliOpt1 = clice::Argument{ .env   = {"MY_ENV"},
+                                        .value = int{7},
+        };
+
+        SECTION("no parse: no option set") {
+            CHECK(!cliOpt1);
+            CHECK(*cliOpt1 == 7); // should have default value
+        }
+
+        SECTION("parse: but no --opt1 option set") {
+            auto args = std::vector<std::string_view>{"app"};
+            clice::parse(args);
+            CHECK(!cliOpt1);
+            CHECK(*cliOpt1 == 7); // should have default value
+        }
+
+        SECTION("parse with --opt1 option") {
+            auto args = std::vector<std::string_view>{"app", "12"};
+            clice::parse(args);
+            CHECK(cliOpt1);
+            CHECK(*cliOpt1 == 12);
+        }
+
+        static_assert(dereferencable<decltype(cliOpt1)>, "check that cliOpt1 can be dereferenced");
+    }
+
 }
