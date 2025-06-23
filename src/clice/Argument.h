@@ -94,6 +94,12 @@ struct ListOfStrings : std::vector<std::string> {
     }
 };
 
+template <typename S>
+constexpr bool HasPushBack = requires {
+    typename S::value_type;
+    { std::declval<S>().push_back(std::declval<typename S::value_type>()) };
+};
+
 template <typename T = std::nullptr_t, typename T2L = std::nullptr_t, typename T2R = std::nullptr_t, typename CBType = std::function<void()>>
 struct Argument {
     Argument<T2L, T2R>*        parent{};
@@ -173,9 +179,8 @@ struct Argument {
                 arg.mapping = v;
             }
             arg.tags = desc.tags;
-            constexpr bool HasPushBack = requires {{ std::declval<T>().push_back(std::declval<typename T::value_type>()) }; };
 
-            bool isMulti = HasPushBack && !std::same_as<std::string, T> && !std::same_as<std::filesystem::path, T>;
+            bool isMulti = HasPushBack<T> && !std::same_as<std::string, T> && !std::same_as<std::filesystem::path, T>;
             if (isMulti) {
                 arg.tags.insert("multi");
             }
@@ -220,23 +225,24 @@ struct Argument {
                         }
                         arg.fromString = nullptr;
                     };
-                } else if constexpr (HasPushBack) {
+                } else if constexpr (HasPushBack<T>) {
                     arg.fromString = [&](std::string_view s) {
                         if (desc.mapping) {
                             throw std::runtime_error("Type can't use mapping");
                         } else {
-                            if constexpr (std::is_arithmetic_v<typename T::value_type>) {
+                            using value_type = typename T::value_type;
+                            if constexpr (std::integral<value_type> || std::floating_point<value_type>) {
                                 if (desc.suffix) {
                                     if (!s.ends_with(desc.suffix.value())) {
                                         throw std::runtime_error{"expected the suffix \"" + desc.suffix.value() + "\""};
                                     }
                                     auto t = s.substr(0, s.size() - desc.suffix->size());
-                                    desc.value.push_back(parseFromString<typename T::value_type>(t));
+                                    desc.value.push_back(parseFromString<value_type>(t));
                                 } else {
-                                    desc.value.push_back(parseFromString<typename T::value_type>(s));
+                                    desc.value.push_back(parseFromString<value_type>(s));
                                 }
                             } else {
-                                desc.value.push_back(parseFromString<typename T::value_type>(s));
+                                desc.value.push_back(parseFromString<value_type>(s));
                             }
                         }
                     };
@@ -279,7 +285,7 @@ struct Argument {
                     if (desc.mapping) return reverseMapping(desc.value);
                     using UT = std::underlying_type_t<T>;
                     return std::to_string(static_cast<UT>(desc.value));
-                } else if constexpr (HasPushBack) {
+                } else if constexpr (HasPushBack<T>) {
                     return std::nullopt;
                 } else if constexpr (std::is_invocable_v<T>) {
                     return std::nullopt;
