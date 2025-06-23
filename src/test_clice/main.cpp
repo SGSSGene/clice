@@ -228,4 +228,22 @@ TEST_CASE("check clice::Argument", "argument") {
         CHECK(cliOpt1);
         CHECK(*cliOpt1 == std::vector<size_t>{15*1000*1000, 16*1000, 16*1024, 1024ull * 1024 * 1024 * 1024});
     }
+
+    SECTION("arguments with magnitude suffix - floats") {
+        auto cliOpt1 = clice::Argument{ .args   = "--opt1",
+                                        .value  = std::vector<double>{}};
+
+
+        auto args = std::vector<std::string_view>{"app", "--opt1", "15M", "16k", "16ki", "1'024Gi", "10m", "20.2u", "1.25n"};
+        clice::parse(args);
+        CHECK(cliOpt1);
+        auto expected = std::vector<double>{15*1000*1000, 16*1000, 16*1024, 1024ull * 1024 * 1024 * 1024, 0.01, 0.0000202, 0.00000000125};
+        REQUIRE(cliOpt1->size() == expected.size());
+        for (size_t i{0}; i < expected.size(); ++i) {
+            INFO(i);
+            INFO(expected[i] - cliOpt1->at(i));
+            CHECK(expected[i] == cliOpt1->at(i));
+        }
+    }
+
 }
