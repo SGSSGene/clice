@@ -206,4 +206,15 @@ TEST_CASE("check clice::Argument", "argument") {
 
         static_assert(dereferencable<decltype(cliOpt1)>, "check that cliOpt1 can be dereferenced");
     }
+
+    SECTION("splitting arguments") {
+        auto cliOpt1 = clice::Argument{ .args   = "--opt1",
+                                        .value  = std::vector<int>{}};
+
+
+        auto args = std::vector<std::string_view>{"app", "--opt1", "-15"};
+        clice::parse(args, /*.allowDashCombi=*/true);
+        CHECK(cliOpt1);
+        CHECK(*cliOpt1 == std::vector<int>{});
+    }
 }

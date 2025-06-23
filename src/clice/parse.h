@@ -12,6 +12,7 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <set>
 #include <span>
 
 namespace clice {
@@ -75,10 +76,37 @@ inline auto parseSingleDash(std::span<std::string_view> _args) -> std::optional<
                 allTrailing = true;
             }
         } else {
+            // check if the split arguments would exists before splitting:
+            auto splitArgs = std::set<std::string>{};
             for (size_t j{1}; j < view.size(); ++j) {
-                args.push_back(std::string{"-"} + view[j]);
-                argview.emplace_back(args.back());
+                splitArgs.insert(std::string{"-"} + view[j]);
             }
+
+            // check each argument, if any option could/would take it
+            auto foundArgs = std::set<std::string>{};
+            auto visitAllArguments = std::function<void(std::vector<ArgumentBase*> const&)>{};
+            visitAllArguments = [&](auto const& args) {
+                for (auto arg : args) {
+                    for (auto const& e : arg->args) {
+                        if (splitArgs.contains(e)) {
+                            foundArgs.insert(e);
+                        }
+                    }
+                    for (auto child : arg->children) {
+                        visitAllArguments(child->children);
+                    }
+                }
+            };
+            visitAllArguments(Register::getInstance().arguments);
+
+            // Only add if all arguments have been found
+            if (foundArgs.size() == splitArgs.size()) {
+                for (auto a : splitArgs) {
+                    args.push_back(std::move(a));
+                    argview.emplace_back(args.back());
+                }
+            }
+
         }
     }
     return parse(argview, false);
