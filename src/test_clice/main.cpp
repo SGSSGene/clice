@@ -55,6 +55,31 @@ TEST_CASE("check clice::Argument", "argument") {
 
         static_assert(dereferencable<decltype(cliOpt1)>, "check that cliOpt1 can be dereferenced");
     }
+    SECTION("test single value option - int -- negative number") {
+        auto cliOpt1 = clice::Argument{ .args   = "--opt1",
+                                        .value  = int{7}};
+
+        SECTION("no parse: no option set") {
+            CHECK(!cliOpt1);
+            CHECK(*cliOpt1 == 7); // should have default value
+        }
+
+        SECTION("parse: but no --opt1 option set") {
+            auto args = std::vector<std::string_view>{"app"};
+            clice::parse(args);
+            CHECK(!cliOpt1);
+            CHECK(*cliOpt1 == 7); // should have default value
+        }
+
+        SECTION("parse with --opt1 option") {
+            auto args = std::vector<std::string_view>{"app", "--opt1", "-12"};
+            clice::parse(args);
+            CHECK(cliOpt1);
+            CHECK(*cliOpt1 == -12);
+        }
+
+        static_assert(dereferencable<decltype(cliOpt1)>, "check that cliOpt1 can be dereferenced");
+    }
 
     SECTION("test single value option - std::string") {
         auto cliOpt1 = clice::Argument{ .args   = "--opt1",
@@ -121,10 +146,10 @@ TEST_CASE("check clice::Argument", "argument") {
                                             .value  = std::vector<int>{}};
 
 
-            auto args = std::vector<std::string_view>{"app", "--opt1", "3", "5", "7", "100", "1000", "2", "7"};
+            auto args = std::vector<std::string_view>{"app", "--opt1", "3", "5", "7", "100", "1000", "2", "-7"};
             clice::parse(args);
             CHECK(cliOpt1);
-            CHECK(*cliOpt1 == std::vector<int>{3, 5, 7, 100, 1000, 2, 7});
+            CHECK(*cliOpt1 == std::vector<int>{3, 5, 7, 100, 1000, 2, -7});
         }
 
     }

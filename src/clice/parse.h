@@ -256,6 +256,16 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi) -> std:
                 }
             }
 
+            // give it to the furthest up activeBase that has multi values
+            for (size_t j{0}; j < activeBases.size(); ++j) {
+                auto const& base = activeBases[activeBases.size()-j-1];
+                if (base->tags.contains("multi") && base->fromString) {
+                    base->fromString(args[i]);
+                    return;
+                }
+            }
+
+
             throw std::runtime_error{std::string{"unexpected cli argument \""} + std::string{args[i]} + "\""};
         }();
     }
