@@ -115,17 +115,15 @@ struct Argument {
         return isSet;
     }
 
-    auto operator*() const -> auto const& {
+    auto operator*() const -> auto const&
+        requires (!std::same_as<T, std::nullptr_t>)
+    {
         if constexpr (std::is_invocable_v<T>) {
             using R = std::decay_t<decltype(value())>;
             if (!anyType.has_value()) {
                 anyType = value();
             }
             return *std::any_cast<R>(&anyType);
-        } else if constexpr (std::same_as<T, std::nullptr_t>) {
-            []<bool type_available = false> {
-                static_assert(type_available, "Can't dereference a flag");
-            }();
         } else {
             return value;
         }
