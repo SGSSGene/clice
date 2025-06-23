@@ -102,9 +102,9 @@ struct Argument {
     std::string           id{}; // some identification, like <threadNbr>
     bool                  symlink{};
     std::string           desc{};
-    bool                  isSet{};
+    bool                  isSet{};   // (not for the user)
     T                     value{};
-    mutable std::any      anyType{}; // used if T is a callback
+    mutable std::any      anyType{}; // used if T is a callback (not for the user)
     std::function<std::vector<std::string>()> completion{};
     CBType cb{};
     size_t                                            cb_priority{100}; // lower priorities will be triggered before larger ones
@@ -115,17 +115,15 @@ struct Argument {
         return isSet;
     }
 
-    auto operator*() const -> auto const& {
+    auto operator*() const -> auto const&
+        requires (!std::same_as<T, std::nullptr_t>)
+    {
         if constexpr (std::is_invocable_v<T>) {
             using R = std::decay_t<decltype(value())>;
             if (!anyType.has_value()) {
                 anyType = value();
             }
             return *std::any_cast<R>(&anyType);
-        } else if constexpr (std::same_as<T, std::nullptr_t>) {
-            []<bool type_available = false> {
-                static_assert(type_available, "Can't dereference a flag");
-            }();
         } else {
             return value;
         }

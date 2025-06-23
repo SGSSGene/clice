@@ -6,7 +6,7 @@ project(clice LANGUAGES CXX
             DESCRIPTION "clice -- command line interface argument parsing")
 
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:SGSSGene/cpm.dependencies@0.0.8")
+CPMAddPackage("gh:SGSSGene/cpm.dependencies@1.0.0")
 CPMLoadDependenciesFile("${CMAKE_CURRENT_SOURCE_DIR}/cpm.dependencies")
 
 # check if this is the main project
@@ -24,7 +24,8 @@ add_subdirectory(src/clice)
 if (${PROJECT_IS_TOP_LEVEL})
     enable_testing()
 
-    add_subdirectory(src/test_header "")
     add_subdirectory(src/clice-demo "")
     add_subdirectory(src/clice-demo2 "")
+    add_subdirectory(src/test_clice "")
+    add_subdirectory(src/test_header "")
 endif ()

@@ -57,30 +57,39 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
 }
 
 auto parse(int argc, char const* const* argv, bool allowDashCombi = false) -> std::optional<std::string>;
+auto parse(std::span<std::string_view> args, bool allowDashCombi = false) -> std::optional<std::string>;
 
-inline auto parseSingleDash(int _argc, char const* const* _argv) -> std::optional<std::string> {
+inline auto parseSingleDash(std::span<std::string_view> _args) -> std::optional<std::string> {
     auto args   = std::list<std::string>{};
-    auto argptr = std::vector<char const*>{};
+    auto argview = std::vector<std::string_view>{};
     bool allTrailing{false};
-    for (int i{0}; i < _argc; ++i) {
-        auto view = std::string_view{_argv[i]};
+    for (size_t i{0}; i < _args.size(); ++i) {
+        auto view = _args[i];
         if (allTrailing
             || view.size() <= 2
             || view[0] != '-'
             || view[1] == '-'
         ) {
-            argptr.push_back(_argv[i]);
+            argview.emplace_back(view);
             if (view == "--") {
                 allTrailing = true;
             }
         } else {
             for (size_t j{1}; j < view.size(); ++j) {
                 args.push_back(std::string{"-"} + view[j]);
-                argptr.push_back(args.back().c_str());
+                argview.emplace_back(args.back());
             }
         }
     }
-    return parse(argptr.size(), argptr.data(), false);
+    return parse(argview, false);
+}
+
+inline auto parseSingleDash(int _argc, char const* const* _argv) -> std::optional<std::string> {
+    auto args = std::vector<std::string_view>{};
+    for (int i{0}; i < _argc; ++i) {
+        args.emplace_back(_argv[i]);
+    }
+    return parseSingleDash(args);
 }
 
 
@@ -101,26 +110,25 @@ inline auto createParameterStrList(std::vector<std::string> const& args) -> std:
 /**
  * allowDashCombi: allows flags like "-a -b" be combined to "-ab"
  */
-inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std::optional<std::string> {
-    if (allowDashCombi) {
-        return parseSingleDash(argc, argv);
-    }
 
-    assert(argc > 0);
-    clice::argv0 = argv[0];
+inline auto parse(std::span<std::string_view> args, bool allowDashCombi) -> std::optional<std::string> {
+    if (allowDashCombi) {
+        return parseSingleDash(args);
+    }
+    assert(args.size() > 0);
+
+    clice::argv0 = args[0];;
 
     // check for symlink (only root arguments are considered)
-    auto redirectedArguments = std::vector<char const*>{};
+    auto redirectedArguments = std::vector<std::string_view>{};
     for (auto arg : Register::getInstance().arguments) {
         if (arg->symlink and std::filesystem::path{argv0}.filename().string().ends_with("-" + arg->args[0])) {
-            redirectedArguments.push_back(argv[0]);
+            redirectedArguments.push_back(args[0]);
             redirectedArguments.push_back(arg->args[0].c_str());
-            for (auto i{1}; i < argc; ++i) {
-                redirectedArguments.push_back(argv[i]);
+            for (size_t i{1}; i < args.size(); ++i) {
+                redirectedArguments.push_back(args[i]);
             }
-            redirectedArguments.push_back(nullptr);
-            argc = redirectedArguments.size()-1;
-            argv = redirectedArguments.data();
+            args = redirectedArguments;
         }
     }
 
@@ -152,9 +160,7 @@ inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std
     }
 
 
-    // parse argc/argv
-
-
+    // parse args (argc/argv)
     auto activeBases = std::vector<ArgumentBase*>{}; // current commands whos sub arguments are of interest;
 
     auto completion = std::getenv("CLICE_COMPLETION") != nullptr;
@@ -181,13 +187,14 @@ inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std
 
 
     bool allTrailing = false;
-    for (int i{1}; i < argc; ++i) {
+    for (size_t i{1}; i < args.size(); ++i) {
         // make suggestion about next possible tokens
-        if (completion and i+1 == argc) {
-            makeCompletionSuggestion(activeBases, std::string_view{argv[i]});
+        if (completion and i+1 == args.size()) {
+            makeCompletionSuggestion(activeBases, std::string_view{args[i]});
             continue;
         }
-        if (std::string_view{argv[i]} == "--" and !allTrailing) {
+        // A marking "--" indicates that all args[i] from now on are interpreted as values
+        if (args[i] == "--" and !allTrailing) {
             allTrailing = true;
             continue;
         }
@@ -196,11 +203,11 @@ inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std
             // walk up the arguments, until one active argument has a child with fitting parameter
             for (size_t j{0}; j < activeBases.size(); ++j) {
                 auto const& base = activeBases[activeBases.size()-j-1];
-                if (((argv[i][0] != '-' or allTrailing or !base->tags.contains("multi")) and base->fromString) and (!base->tags.contains("multi") || base->args.size()>0 || allTrailing)) {
-                    base->fromString(argv[i]);
+                if (((!args[i].starts_with("-") or allTrailing or !base->tags.contains("multi")) and base->fromString) and (!base->tags.contains("multi") || base->args.size()>0 || allTrailing)) {
+                    base->fromString(args[i]);
                     return;
                 }
-                if (auto arg = findActiveArg(argv[i], base); arg) {
+                if (auto arg = findActiveArg(args[i], base); arg) {
                     arg->init();
                     activeBases.push_back(arg);
                     return;
@@ -214,7 +221,7 @@ inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std
                     throw std::runtime_error{"option \"" + param + "\" is missing a value (1)"};
                 }
             }
-            auto arg = findRootArg(argv[i]);
+            auto arg = findRootArg(args[i]);
             if (arg) {
                 arg->init();
                 activeBases.push_back(arg);
@@ -229,7 +236,7 @@ inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std
                         arg->init();
                         if (!arg->tags.contains("multi")) arg->init = nullptr;
                         activeBases.push_back(arg);
-                        arg->fromString(argv[i]);
+                        arg->fromString(args[i]);
                         return;
                     }
                 }
@@ -243,13 +250,23 @@ inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std
                         if (!arg->tags.contains("multi")) arg->init = nullptr;
 
                         activeBases.push_back(arg);
-                        arg->fromString(argv[i]);
+                        arg->fromString(args[i]);
                         return;
                     }
                 }
             }
 
-            throw std::runtime_error{std::string{"unexpected cli argument \""} + argv[i] + "\""};
+            // give it to the furthest up activeBase that has multi values
+            for (size_t j{0}; j < activeBases.size(); ++j) {
+                auto const& base = activeBases[activeBases.size()-j-1];
+                if (base->tags.contains("multi") && base->fromString) {
+                    base->fromString(args[i]);
+                    return;
+                }
+            }
+
+
+            throw std::runtime_error{std::string{"unexpected cli argument \""} + std::string{args[i]} + "\""};
         }();
     }
     if (completion) {
@@ -339,6 +356,14 @@ struct Parse {
     bool catchExceptions{false}; // catches exception and prints them
     std::function<void()> run;   // function to run
 };
+inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std::optional<std::string> {
+    auto args = std::vector<std::string_view>{};
+    for (int i{0}; i < argc; ++i) {
+        args.emplace_back(argv[i]);
+    }
+    return parse(args, allowDashCombi);
+}
+
 
 inline void parse(Parse const& parse) {
     auto f = [&]() {
