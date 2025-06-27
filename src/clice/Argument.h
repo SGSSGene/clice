@@ -228,6 +228,17 @@ struct Argument {
                 } else if constexpr (std::is_arithmetic_v<T>) {
                     arg.fromString = [&](std::string_view s) {
                         if (desc.mapping) {
+                            if (!desc.mapping->contains(std::string{s})) {
+                                std::string validValues{};
+                                for (auto [key, value] : *desc.mapping) {
+                                    validValues += key + ", ";
+                                }
+                                if (validValues.size() > 2) {
+                                    validValues.pop_back();
+                                    validValues.pop_back();
+                                }
+                                throw std::runtime_error{"invalid value \"" + std::string{s} + "\". Valid values are: [ " + validValues + " ]"};
+                            }
                             desc.value = desc.mapping->at(std::string{s});
                         } else {
                             if (desc.suffix) {
@@ -247,6 +258,18 @@ struct Argument {
                                      || std::is_enum_v<T>) {
                     arg.fromString = [&](std::string_view s) {
                         if (desc.mapping) {
+                            if (!desc.mapping->contains(std::string{s})) {
+                                std::string validValues{};
+                                for (auto [key, value] : *desc.mapping) {
+                                    validValues += key + ", ";
+                                }
+                                if (validValues.size() > 2) {
+                                    validValues.pop_back();
+                                    validValues.pop_back();
+                                }
+                                throw std::runtime_error{"invalid value \"" + std::string{s} + "\". Valid values are: [ " + validValues + " ]"};
+                            }
+
                             desc.value = desc.mapping->at(std::string{s});
                         } else {
                             desc.value = parseFromString<T>(s);
