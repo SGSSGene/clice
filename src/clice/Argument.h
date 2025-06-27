@@ -50,6 +50,8 @@ struct ArgumentBase {
     ArgumentBase(ArgumentBase&&) = delete;
     auto operator=(ArgumentBase const&) -> ArgumentBase& = delete;
     auto operator=(ArgumentBase&&) -> ArgumentBase& = delete;
+
+    void validateOrThrowInvariant() const;
 };
 
 struct Register {
@@ -68,6 +70,7 @@ inline ArgumentBase::ArgumentBase(ArgumentBase* parent, std::type_index idx)
     if (parent) {
         parent->children.push_back(this);
     } else {
+        // check this child does not exists yet
         Register::getInstance().arguments.push_back(this);
     }
 }
@@ -79,6 +82,29 @@ inline ArgumentBase::~ArgumentBase() {
     } else {
         auto& children = Register::getInstance().arguments;
         children.erase(std::remove(children.begin(), children.end(), this), children.end());
+    }
+}
+
+inline void ArgumentBase::validateOrThrowInvariant() const {
+    auto const& self = *this;
+    auto checkAgainstOther = [&](ArgumentBase const* child) {
+        if (&self == child) return;
+        for (auto const& s : args) {
+            for (auto const& s2 : child->args) {
+                if (s == s2) {
+                    throw std::runtime_error{"two options register the same option/flag \"" + s + "\""};
+                }
+            }
+        }
+    };
+    if (parent) {
+        for (auto const& child : parent->children) {
+            checkAgainstOther(child);
+        }
+    } else {
+        for (auto const& child : Register::getInstance().arguments) {
+            checkAgainstOther(child);
+        }
     }
 }
 
@@ -158,6 +184,8 @@ struct Argument {
             arg.id      = desc.id;
             arg.symlink = desc.symlink;
             arg.desc    = desc.desc;
+            arg.validateOrThrowInvariant();
+
             if (desc.completion) {
                 arg.completion_fn = desc.completion;
             } else {
