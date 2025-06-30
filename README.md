@@ -43,7 +43,7 @@ For more details on `clice::Argument` options, see the reference further down.
 
 ## The clice::Argument object
 ```c++
-auto mycomplete() -> std::vector<std::string>;
+auto my_complete() -> std::vector<std::string>;
 void onAvailable();
 
 auto cliOpt = clice::Argument {
@@ -67,7 +67,7 @@ auto cliOpt = clice::Argument {
     .tags       = {"sometag"},            // List of tags, known tags: "required" (value must be given), "ignore-required" (callback is run even if not all required values are present)
 };
 
-auto mycomplete() -> std::vector<std::string> {
+auto my_complete() -> std::vector<std::string> {
     return {"file1", "file2"};
 }
 
