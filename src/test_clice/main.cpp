@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2025 Simon Gene Gottlieb
 // SPDX-License-Identifier: CC0-1.0
-#include <clice/clice.h>
+#include "someheader.h"
 
+#include <clice/clice.h>
 #include <catch2/catch_all.hpp>
 
 template <typename T>
