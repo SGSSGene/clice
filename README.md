@@ -115,7 +115,7 @@ If `.id` is set `UINT64` is changed to something else. e.g: `.id = NbrOfThreads`
 The description of the argument. Shown in help page and CWL tool-description file.
 
 #### `.value` - Type and default value of this argument
-Many argument parser split into many types of arguments. The most common ones are "flag", "option" and "command".
+Many argument parsers split into many types of arguments. The most common ones are "flag", "option" and "command".
 
 - A flag is an argument that takes no value `--verbose`
 - Option is an argument that takes one (or sometimes more) values `--threads 5`
@@ -152,10 +152,10 @@ Notice, dereferencing is always possible, even if the argument was not given on 
 #### `.suffix` - argument suffix
 This enforces that argument must be written with a suffix type.
 This enforces user to write `--timeout 5s` making clear that the time is in seconds.
-In combination with with the scaling suffices, this enables writing stuff like `--timeout 10ms`.
+In combination with the scaling suffices, this enables writing stuff like `--timeout 10ms`.
 
 ```c++
-auto cliTimout = clice::Argument {
+auto cliTimeout = clice::Argument {
     .args   = {"--timeout"},
     .desc   = "a timeout in seconds",
     .value  = double{0.01},
@@ -175,7 +175,7 @@ If multiple `.cb` options are available, one might have the desire to have some 
 The `.cb_priority` is a size_t defaulted to 100. The lower the value, the earlier it is being executed.
 
 #### `.mapping` - mapping arguments to values
-Under some circumstances, for example using enums, it user want to map string values into the value domain.
+Under some circumstances, for example using enums, a user wants to map string values into the value domain.
 ```c++
 auto cliLogLevel = clice::Argument {
     .args    = {"-l", "--log_level"},
