@@ -149,17 +149,23 @@ auto cliBTChar    = clice::Argument{ .parent = &cliBasicTypes,
                                     };
 auto cliBTString  = clice::Argument{ .parent = &cliBasicTypes,
                                      .args   = "--string",
-                                      .id     = "<word>",
+                                     .id     = "<word>",
                                      .desc   = "string value",
                                      .value  = std::string{},
                                     };
 auto cliBTMappedBool = clice::Argument{ .parent = &cliBasicTypes,
                                         .args   = "--mapped_bool",
                                         .id     = "<qual>",
-                                        .desc   = "takes \"good\" and \"bad\" as input",
+                                        .desc   = R"(takes "good" and "bad" as input)",
                                         .value  = bool{},
                                         .mapping = {{{"good", true}, {"bad", false}}},
                                       };
+auto cliBTSuffix = clice::Argument{ .parent = &cliBasicTypes,
+                                    .args   = "--timeout",
+                                    .desc   = "a timeout in seconds",
+                                    .value  = double{4},
+                                    .suffix = "s",
+                                  };
 
 enum class MyEnumType {Foo, Bar};
 auto cliBTEnum = clice::Argument{ .parent = &cliBasicTypes,
@@ -305,6 +311,7 @@ int main(int argc, char** argv) {
         std::cout << "  --char " << cliBTChar << " " << *cliBTChar << "\n";
         std::cout << "  --string " << cliBTString << " " << *cliBTString << " has len " << cliBTString->size() << "\n";
         std::cout << "  --mapped_bool " << cliBTMappedBool << " " << *cliBTMappedBool << "\n";
+        std::cout << "  --timeout " << cliBTSuffix << " " << *cliBTSuffix << "\n";
         std::cout << "  --enum " << cliBTEnum << " " << (*cliBTEnum==MyEnumType::Foo?"foo":"bar") << "\n";
         std::cout << "  --input " << cliBTInputPath << " " << *cliBTInputPath << "\n";
         std::cout << "  --output " << cliBTOutputPath << " " << *cliBTOutputPath << "\n";

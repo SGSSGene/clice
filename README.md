@@ -75,6 +75,121 @@ void onAvailable() {
 }
 ```
 
+## Reference
+#### `.parent` - dependent option
+    Takes a pointer to a different `clice::Argument`, making this option only valid if the parent command was set on the command line previously.
+
+In the next example the `-s` or `--strict` flag can only be set, if `add` was previously set.
+This allows to set something like: `./my_program add -s` but does not allow `.my_program -s`.
+```c++
+auto cliAdd = clice::Argument{ .args = {"add"},
+                               .desc = "example: adds something to something"
+};
+auto cliStrict = clice::Argument{ .parent = &cliAdd,
+                                  .args   = {"-s", "--strict"},
+                                  .desc   = "strictly adding (what ever this means)"
+};
+```
+
+#### `.args` - argument triggers
+A list of arguments that can be set. Recommendations is to set something like: `--longOption`, `-s` or `add`.
+
+#### `.env` - alternative environment variables
+Since reading environment variables is so common, this is also included in clice.
+This takes a list of environment variables. If a option is not set on the command line read the environment variable
+and set the value to that value.
+
+#### `.id` - help page helper
+This is a simple helper descriptor for the help page. The help page prints something like this for your options:
+```
+    -t, --threads UINT64 - set the number of threads used to load a file
+```
+If `.id` is set `UINT64` is changed to something else. e.g: `.id = NbrOfThreads`:
+```
+    -t, --threads NbrOfThreads - set the number of threads used to load a file
+```
+#### `.desc` - argument description
+The description of the argument. Shown in help page and CWL tool-description file.
+
+#### `.value` - Type and default value of this argument
+Many argument parser split into many types of arguments. The most common ones are "flag", "option" and "command".
+
+- A flag is an argument that takes no value `--verbose`
+- Option is an argument that takes one (or sometimes more) values `--threads 5`
+- Command is an argument that has no leading dashes `add`
+
+In clice, these are all `clice::Argument`.
+To have something like a flag or a command use an argument without value:
+```c++
+auto cliAdd    = clice::Argument{ .args = {"add"}};
+auto cliStrict = clice::Argument{ .args = {"--strict"}};
+```
+
+For arguments that take extra parameters `.value` determines what type of values it accepts and what its default value
+are if none is provided.
+
+```c++
+auto cliThreads = clice::Argument{ .args = {"--threads"},
+                                   .value = size_t{1}
+};
+auto cliWord = clice::Argument{ .args = {"--word"},
+                                .value = std::string{}
+};
+```
+
+Arguments without `.value` only provide an implicit conversion to a bool, allowing them to be used
+in `if` statements checks like `if (cliAdd) {...}`
+Arguments with `.value` additionally also provide dereference (`*`, `->`) operator to access the values like
+`size_t x = *cliThreads`. or `size_t x = cliWord->size()`.
+
+Notice, dereferencing is always possible, even if the argument was not given on the command line. It falls back to the default value, which is the one specified when constructing the argument.
+
+#### `.suffix` - argument suffix
+This enforces that argument must be written with a suffix type.
+This enforces user to write `--timeout 5s` making clear that the time is in seconds.
+In combination with with the scaling suffices, this enables writing stuff like `--timeout 10ms`.
+
+```c++
+auto cliTimout = clice::Argument{ .args   = {"--timeout"},
+                                  .desc   = "a timeout in seconds",
+                                  .value  = double{0.01},
+                                  .suffix = "s",
+};
+```
+
+#### `.completion` - callback to a completion function
+Helper function to support tab completion (TODO: requires better documentation)
+
+#### `.cb` - callback on argument present
+This function is called at the end of the parsing step.
+Allowing arguments to verify correctness of the given values or triggering more complex behavior before the program is being executed.
+
+#### `.cb_priority` - callback priority
+If multiple `.cb` options are available, one might have the desire to have some run before others.
+The `.cb_priority` is a size_t defaulted to 100. The lower the value, the earlier it is being executed.
+
+#### `.mapping` - mapping arguments to values
+Under some circumstances, for example using enums, it user want to map string values into the value domain.
+```c++
+auto cliLogLevel = clice::Argument{ .args    = {"-l", "--log_level"},
+                                    .desc    = "log level, valid values: \"none\", \"error\", \"warning\" and \"verbose\"",
+                                    .value   = size_t{0},
+                                    .mapping = std::unordered_map<std::string, size_t> {
+                                        {"none", 0},
+                                        {"error", 1},
+                                        {"warning", 2},
+                                        {"verbose", 3}
+                                    }
+};
+```
+
+#### `.tags` - giving arguments magic properties
+Currently two tags are supported:
+
+- "required": enforces that the argument was given on the command line
+- "ignore-required": allows an arguments `.cb` function to be executed even if some "required" argument is missing (this is needed to implement something like '--help')
+
+
 ## Examples
 
 
