@@ -23,7 +23,7 @@ At its core is the `clice::Argument` class, which is recommended to be used to c
 Creating these objects should happen using `designated initializers`, making them very readable.
 The interface of these objects is inspired by `std::unique_ptr` or `std::optional`.
 
-A simple example of accepting a `-v` or `--verbose` flag:
+A simple example of accepting a `-l` or `--log_level` option:
 
 ```c++
 auto cliLogLevel = clice::Argument {
