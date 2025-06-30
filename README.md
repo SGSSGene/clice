@@ -274,6 +274,8 @@ tab-completion when running `./clice-demo` programs.
 
 There are many other C++ CLI parsers out there. Maybe you should also write your own?
 
+Only [wahl](https://github.com/dominiklohmann/wahl) has a similar global registration mechanism as clice.
+
 - [argagg](https://github.com/vietjtnguyen/argagg)
 - [Argengine](https://github.com/juzzlin/Argengine)
 - [argh!](https://github.com/adishavit/argh)
