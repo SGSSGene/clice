@@ -126,9 +126,9 @@ constexpr bool HasPushBack = requires {
     { std::declval<S>().push_back(std::declval<typename S::value_type>()) };
 };
 
-template <typename T = std::nullptr_t, typename T2L = std::nullptr_t, typename T2R = std::nullptr_t, typename CBType = std::function<void()>>
+template <typename T = std::nullptr_t, typename CBType = std::function<void()>, typename ...TParents>
 struct Argument {
-    Argument<T2L, T2R>*        parent{};
+    Argument<TParents...>*     parent{};
     ListOfStrings              args{};
     ListOfStrings              env{};
     std::string                id{}; // some identification, like <threadNbr>
@@ -139,7 +139,7 @@ struct Argument {
     std::optional<std::string> suffix;          // require a suffix like "b" (bytes) or "s" (seconds)
     mutable std::any           anyType{}; // used if T is a callback (not for the user)
     std::function<std::vector<std::string>()> completion{};
-    CBType cb{};
+    CBType                                            cb{};
     size_t                                            cb_priority{100}; // lower priorities will be triggered before larger ones
     std::optional<std::unordered_map<std::string, T>> mapping{};
     std::unordered_set<std::string>                   tags{};  // known tags "required"
@@ -214,7 +214,9 @@ struct Argument {
             }
             arg.init = [&]() {
                 desc.isSet = true;
-                if constexpr (std::same_as<T, std::nullptr_t>) {
+                if constexpr (requires() {
+                    { desc.cb() };
+                }) {
                     arg.cb = desc.cb;
                 } else if constexpr (requires() {
                     { desc.cb(*desc) };

@@ -301,24 +301,6 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi) -> std:
         exit(0);
     }
 
-    // check if all active arguments got parameters
-    for (size_t j{0}; j < activeBases.size(); ++j) {
-        auto const& base = activeBases[activeBases.size()-j-1];
-        if (!base->tags.contains("multi") && base->fromString) {
-            auto param = createParameterStrList(base->args);
-            throw std::runtime_error{"option " + base->id + "\"" + param + "\" is missing a value (2)"};
-        }
-        for (auto child : base->children) {
-            if (child->tags.contains("required")) {
-                if (std::ranges::find(activeBases, child) == activeBases.end()) {
-                    auto option = createParameterStrList(base->args);
-                    auto suboption = createParameterStrList(child->args);
-                    throw std::runtime_error{"option " + child->id + "\"" + suboption + "\" is required (enforced by \"" + option + "\")"};
-                }
-            }
-        }
-    }
-
     // create list of all triggers according to priority
     auto triggers = std::map<size_t, std::vector<std::tuple<clice::ArgumentBase*, std::function<void()>>>>{};
     auto f = std::function<void(std::vector<clice::ArgumentBase*>)>{};
@@ -348,6 +330,24 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi) -> std:
                 }
                 if (only_ignore) {
                     cb();
+                }
+            }
+        }
+    }
+
+    // check if all active arguments got parameters
+    for (size_t j{0}; j < activeBases.size(); ++j) {
+        auto const& base = activeBases[activeBases.size()-j-1];
+        if (!base->tags.contains("multi") && base->fromString) {
+            auto param = createParameterStrList(base->args);
+            throw std::runtime_error{"option " + base->id + "\"" + param + "\" is missing a value (2)"};
+        }
+        for (auto child : base->children) {
+            if (child->tags.contains("required")) {
+                if (std::ranges::find(activeBases, child) == activeBases.end()) {
+                    auto option = createParameterStrList(base->args);
+                    auto suboption = createParameterStrList(child->args);
+                    throw std::runtime_error{"option " + child->id + "\"" + suboption + "\" is required (enforced by \"" + option + "\")"};
                 }
             }
         }
@@ -415,6 +415,7 @@ inline void parse(Parse const& parse) {
                                                 }
                                                 std::cout << generateHelp(); exit(0);
                                             },
+                                           .cb_priority = 5,
                                            .tags   = {"ignore-required"},
         };
         cb();

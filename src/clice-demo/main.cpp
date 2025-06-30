@@ -40,6 +40,7 @@ auto cliAdd = clice::Argument {
     .args    = "add",
     .symlink = true, // allows access via symlink to clice-demo-add
     .desc    = "adds some stuff",
+    .cb      = []() { std::cout << "command add executed\n"; }
 };
 auto cliVerbose = clice::Argument {
     .parent = &cliAdd,
