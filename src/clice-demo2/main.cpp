@@ -3,13 +3,15 @@
 #include <clice/clice.h>
 
 namespace {
-auto cliVerbose = clice::Argument{ .args   = {"-v", "--verbose"},
-                                   .desc   = "detailed description of what is happening",
+auto cliVerbose = clice::Argument {
+    .args   = {"-v", "--verbose"},
+    .desc   = "detailed description of what is happening",
 };
-auto cliNbr     = clice::Argument{ .args   = {"-n", "--nbr"},
-                                   .id     = "<nbr>",
-                                   .desc   = "setting some nbr",
-                                   .value  = 5,
+auto cliNbr = clice::Argument {
+    .args   = {"-n", "--nbr"},
+    .id     = "<nbr>",
+    .desc   = "setting some nbr",
+    .value  = 5,
 };
 }
 int main(int argc, char** argv) {

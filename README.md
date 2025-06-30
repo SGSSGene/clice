@@ -10,7 +10,7 @@ Writing a consistent CLI becomes a lot more challenging, the more arguments a pr
 Clice tries to solve this problem and supports the user to create help pages, provide tab-completion and [CWL](https://www.commonwl.org/) tool-description files.
 
 ## Features
-- No enforced argument types: `--flag`, `-a`, `--a`, `-option`, `/help`, `add`, `+no-opt`
+- Support all argument types: `--flag`, `-a`, `--a`, `-option`, `/help`, `add`, `+no-opt`
 - Supports flags, single-value options, multi-value options, dependent options, commands and subcommands
 - Global option registration
 - Parsable tree for argument inspection (could be used to generate a help page or in the future a man page.)
@@ -26,9 +26,10 @@ The interface of these objects is inspired by `std::unique_ptr` or `std::optiona
 A simple example of accepting a `-v` or `--verbose` flag:
 
 ```c++
-auto cliLogLevel = clice::Argument { .args = {"-l", "--log_level"},
-                                     .desc = "Logging level. 0: none, 1: errors, 2: all"
-                                     .value = size_t{1}
+auto cliLogLevel = clice::Argument {
+    .args = {"-l", "--log_level"},
+    .desc = "Logging level. 0: none, 1: errors, 2: all",
+    .value = size_t{1},
 };
 ```
 
@@ -45,25 +46,25 @@ For more details on `clice::Argument` options, see the reference further down.
 auto mycomplete() -> std::vector<std::string>;
 void onAvailable();
 
-auto cliOpt = clice::Argument{ .parent      = &otherOption,          // A pointer to a parent object, if given this parameter is only being evaluated if the parent option was set before
-                               .args        = {"-o", "--option"},    // A list of arguments, on how this option can be triggered on the command line
-                               .env         = {"MY_ENV"},            // A list of environment variables, that are used (if values are given via command line and CLI, the CLI argument overwrites the env)
-                               .id          = "file_nbr",            // For help page (and similar), a name for the value given
-                               .desc        = "some thing required", // Description, used for help page (and similar)
+auto cliOpt = clice::Argument {
+    .parent      = &otherOption,          // A pointer to a parent object, if given this parameter is only being evaluated if the parent option was set before
+    .args        = {"-o", "--option"},    // A list of arguments, on how this option can be triggered on the command line
+    .env         = {"MY_ENV"},            // A list of environment variables, that are used (if values are given via command line and CLI, the CLI argument overwrites the env)
+    .id          = "file_nbr",            // For help page (and similar), a name for the value given
+    .desc        = "some thing required", // Description, used for help page (and similar)
 
-                               .value       = size_t{0},             // Value type and default value
-                               .suffix      = "s",                   // Default: std::nullopt, enforces some suffix to be attached to this value
-                               .completion  = my_complete,           // A function that returns possible values for completion
-                               .cb          = onAvailable,           // This function is being triggered at the end of the parsing step, if the value of this option was given
-                               .cb_priority = 100,                   // to order multiple arguments, lower value is being run before the others (default 100)
-                               .mapping     = std::nullopt,          // A mapping from strings to values, no mapping used if not given (or std::nullopt)
-                                                                     // e.g. (for a string to int mapping)
-                                                                     // std::unordered_map<std::string, int> {
-                                                                     //     {"mode1", 0},
-                                                                     //     {"mode2", 1}
-                                                                     // };
-                               .tags       = {"sometag"},            // List of tags, known tags: "required" (value must be given), "ignore-required" (callback is run even if not all required values are present)
-
+    .value       = size_t{0},             // Value type and default value
+    .suffix      = "s",                   // Default: std::nullopt, enforces some suffix to be attached to this value
+    .completion  = my_complete,           // A function that returns possible values for completion
+    .cb          = onAvailable,           // This function is being triggered at the end of the parsing step, if the value of this option was given
+    .cb_priority = 100,                   // to order multiple arguments, lower value is being run before the others (default 100)
+    .mapping     = std::nullopt,          // A mapping from strings to values, no mapping used if not given (or std::nullopt)
+                                          // e.g. (for a string to int mapping)
+                                          // std::unordered_map<std::string, int> {
+                                          //     {"mode1", 0},
+                                          //     {"mode2", 1}
+                                          // };
+    .tags       = {"sometag"},            // List of tags, known tags: "required" (value must be given), "ignore-required" (callback is run even if not all required values are present)
 };
 
 auto mycomplete() -> std::vector<std::string> {
@@ -82,12 +83,14 @@ void onAvailable() {
 In the next example the `-s` or `--strict` flag can only be set, if `add` was previously set.
 This allows to set something like: `./my_program add -s` but does not allow `.my_program -s`.
 ```c++
-auto cliAdd = clice::Argument{ .args = {"add"},
-                               .desc = "example: adds something to something"
+auto cliAdd = clice::Argument {
+    .args = {"add"},
+    .desc = "example: adds something to something",
 };
-auto cliStrict = clice::Argument{ .parent = &cliAdd,
-                                  .args   = {"-s", "--strict"},
-                                  .desc   = "strictly adding (what ever this means)"
+auto cliStrict = clice::Argument {
+    .parent = &cliAdd,
+    .args   = {"-s", "--strict"},
+    .desc   = "strictly adding (what ever this means)",
 };
 ```
 
@@ -129,11 +132,13 @@ For arguments that take extra parameters `.value` determines what type of values
 are if none is provided.
 
 ```c++
-auto cliThreads = clice::Argument{ .args = {"--threads"},
-                                   .value = size_t{1}
+auto cliThreads = clice::Argument {
+    .args = {"--threads"},
+    .value = size_t{1},
 };
-auto cliWord = clice::Argument{ .args = {"--word"},
-                                .value = std::string{}
+auto cliWord = clice::Argument {
+    .args = {"--word"},
+    .value = std::string{},
 };
 ```
 
@@ -150,10 +155,11 @@ This enforces user to write `--timeout 5s` making clear that the time is in seco
 In combination with with the scaling suffices, this enables writing stuff like `--timeout 10ms`.
 
 ```c++
-auto cliTimout = clice::Argument{ .args   = {"--timeout"},
-                                  .desc   = "a timeout in seconds",
-                                  .value  = double{0.01},
-                                  .suffix = "s",
+auto cliTimout = clice::Argument {
+    .args   = {"--timeout"},
+    .desc   = "a timeout in seconds",
+    .value  = double{0.01},
+    .suffix = "s",
 };
 ```
 
@@ -171,15 +177,16 @@ The `.cb_priority` is a size_t defaulted to 100. The lower the value, the earlie
 #### `.mapping` - mapping arguments to values
 Under some circumstances, for example using enums, it user want to map string values into the value domain.
 ```c++
-auto cliLogLevel = clice::Argument{ .args    = {"-l", "--log_level"},
-                                    .desc    = "log level, valid values: \"none\", \"error\", \"warning\" and \"verbose\"",
-                                    .value   = size_t{0},
-                                    .mapping = std::unordered_map<std::string, size_t> {
-                                        {"none", 0},
-                                        {"error", 1},
-                                        {"warning", 2},
-                                        {"verbose", 3}
-                                    }
+auto cliLogLevel = clice::Argument {
+    .args    = {"-l", "--log_level"},
+    .desc    = "log level, valid values: \"none\", \"error\", \"warning\" and \"verbose\"",
+    .value   = size_t{0},
+    .mapping = std::unordered_map<std::string, size_t> {
+        {"none", 0},
+        {"error", 1},
+        {"warning", 2},
+        {"verbose", 3}
+    }
 };
 ```
 
@@ -197,18 +204,21 @@ Currently two tags are supported:
 #include <clice/clice.h>
 #include <iostream>
 
-auto cliAdd     = clice::Argument{ .args   = {"add"},
-                                   .desc   = "adds some stuff",
+auto cliAdd = clice::Argument {
+    .args   = {"add"},
+    .desc   = "adds some stuff",
 };
-auto cliVerbose = clice::Argument{ .parent = &cliAdd,
-                                   .args   = {"--verbose", "-v"},
-                                   .desc   = "detailed description of what is happening",
+auto cliVerbose = clice::Argument {
+    .parent = &cliAdd,
+    .args   = {"--verbose", "-v"},
+    .desc   = "detailed description of what is happening",
 };
 
-auto cliRequired = clice::Argument{ .args   = {"-r", "--required"},
-                                    .desc   = "some thing required",
-                                    .value  = size_t{0},
-                                    .tags   = {"required"}
+auto cliRequired = clice::Argument {
+    .args   = {"-r", "--required"},
+    .desc   = "some thing required",
+    .value  = size_t{0},
+    .tags   = {"required"},
 };
 
 int main(int argc, char** argv) {
@@ -229,13 +239,15 @@ Or extreme reduced main, including, parsing, help generation and exception catch
 #include <clice/clice.h>
 
 namespace {
-auto cliVerbose = clice::Argument{ .args   = {"-v", "--verbose"},
-                                   .desc   = "detailed description of what is happening",
+auto cliVerbose = clice::Argument{
+    .args   = {"-v", "--verbose"},
+    .desc   = "detailed description of what is happening",
 };
-auto cliNbr     = clice::Argument{ .args   = {"-n", "--nbr"},
-                                   .id     = "<nbr>",
-                                   .desc   = "setting some nbr",
-                                   .value  = 5,
+auto cliNbr     = clice::Argument{
+    .args   = {"-n", "--nbr"},
+    .id     = "<nbr>",
+    .desc   = "setting some nbr",
+    .value  = 5,
 };
 }
 int main(int argc, char** argv) {
