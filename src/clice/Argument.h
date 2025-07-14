@@ -136,7 +136,7 @@ struct Argument {
     std::string                desc{};
     bool                       isSet{};   // (not for the user)
     T                          value{};
-    std::optional<std::string> suffix;          // require a suffix like "b" (bytes) or "s" (seconds)
+    std::optional<std::string> suffix{};  // require a suffix like "b" (bytes) or "s" (seconds)
     mutable std::any           anyType{}; // used if T is a callback (not for the user)
     std::function<std::vector<std::string>()> completion{};
     CBType                                            cb{};
