@@ -382,7 +382,7 @@ struct Parse {
     bool allowDashCombi{false};  // allows to combine "-a -b" into "-ab"
     bool helpOpt{false};         // automatically registers --help option
     bool catchExceptions{false}; // catches exception and prints them
-    std::function<void()> run;   // function to run
+    std::function<void()> run{}; // function to run
 };
 inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std::optional<std::string> {
     auto args = std::vector<std::string_view>{};
