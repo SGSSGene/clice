@@ -92,9 +92,7 @@ inline auto parseSingleDash(std::span<std::string_view> _args) -> std::optional<
                             foundArgs.insert(e);
                         }
                     }
-                    for (auto child : arg->children) {
-                        visitAllArguments(child->children);
-                    }
+                    visitAllArguments(arg->children);
                 }
             };
             visitAllArguments(Register::getInstance().arguments);
@@ -174,9 +172,7 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi) -> std:
                 for (auto const& e : arg->env) {
                     cb(*arg, e);
                 }
-                for (auto child : arg->children) {
-                    visitAllArguments(child->children, cb);
-                }
+                visitAllArguments(arg->children, cb);
             }
         };
         visitAllArguments(Register::getInstance().arguments, [&](ArgumentBase& arg, std::string env) {
