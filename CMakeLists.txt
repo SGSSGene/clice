@@ -16,15 +16,11 @@ if (${PROJECT_IS_TOP_LEVEL})
 endif ()
 
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:SGSSGene/cpmpack#58e562be2a2a288686c0db3d1b6a869503b6f9eb")
+CPMAddPackage("gh:SGSSGene/cpmpack@1.1.1")
 loadCPMPack("${CMAKE_CURRENT_SOURCE_DIR}/cpmpack.json")
+enable_testing()
 
 if (CLICE_USE_TDL)
     target_link_libraries(clice INTERFACE tdl::tdl)
     target_compile_definitions(clice INTERFACE CLICE_USE_TDL)
-endif ()
-
-
-if (${PROJECT_IS_TOP_LEVEL})
-    add_subdirectory(src/test_header "")
 endif ()

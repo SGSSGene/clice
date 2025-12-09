@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: ISC
 #pragma once
 
+#ifdef CLICE_USE_TDL
+
 #include "Argument.h"
 
 #include <algorithm>
@@ -157,3 +159,4 @@ inline auto generateCWL(std::vector<std::string> subtool) -> tdl::ToolInfo {
     return info;
 }
 }
+#endif

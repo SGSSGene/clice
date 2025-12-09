@@ -24,7 +24,8 @@
       "language": "cxx_std_20",
       "dependencies": [
         "fmt::fmt"
-      ]
+      ],
+      "test_header": true
     },
     {
       "name": "clice-demo",
@@ -45,6 +46,7 @@
     {
       "name": "test_clice",
       "type": "executable",
+      "test": true,
       "language": "cxx_std_20",
       "dependencies": [
         "clice::clice",
