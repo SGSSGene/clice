@@ -1,0 +1,80 @@
+{
+  "format_version": "1",
+  "options": [
+    {
+        "name": "CLICE_BUILD_TEST",
+        "description": "build tests for this library",
+        "default": "${PROJECT_IS_TOP_LEVEL}"
+    },
+    {
+        "name": "CLICE_BUILD_DEMO",
+        "description": "build demonstration executables using this library",
+        "default": "${PROJECT_IS_TOP_LEVEL}"
+    },
+    {
+        "name": "CLICE_USE_TDL",
+        "description": "Enables tool_description_lib(TDL) to be supported by CLICE (enables CWL features)",
+        "default": "${PROJECT_IS_TOP_LEVEL}"
+    },
+  ],
+  "translationsets": [
+    {
+      "name": "clice::clice",
+      "type": "library",
+      "language": "cxx_std_20",
+      "dependencies": [
+        "fmt::fmt"
+      ],
+      "test_header": true
+    },
+    {
+      "name": "clice-demo",
+      "type": "executable",
+      "language": "cxx_std_20",
+      "dependencies": [
+        "clice::clice"
+      ]
+    },
+    {
+      "name": "clice-demo2",
+      "type": "executable",
+      "language": "cxx_std_20",
+      "dependencies": [
+        "clice::clice"
+      ]
+    },
+    {
+      "name": "test_clice",
+      "type": "executable",
+      "test": true,
+      "language": "cxx_std_20",
+      "dependencies": [
+        "clice::clice",
+        "Catch2::Catch2WithMain",
+        ]
+    },
+  ],
+  "packages": [
+    {
+      "name": "fmt",
+      "version": "12.1.0",
+      "github_repository": "fmtlib/fmt",
+      "git_tag": "{VERSION}",
+      "options": [
+            "FMT_INSTALL ON"
+      ]
+    },
+    {
+      "if": "CLICE_USE_TDL",
+      "name": "tool_description_lib",
+      "version": "1.0.1",
+      "github_repository": "deNBI-cibi/tool_description_lib"
+    },
+    {
+      "if": "PROJECT_IS_TOP_LEVEL",
+      "name": "Catch2",
+      "version": "3.8.0",
+      "github_repository": "catchorg/Catch2"
+    }
+  ]
+}

@@ -5,10 +5,6 @@ cmake_minimum_required (VERSION 3.25)
 project(clice LANGUAGES CXX
             DESCRIPTION "clice -- command line interface argument parsing")
 
-include(cmake/CPM.cmake)
-CPMAddPackage("gh:SGSSGene/cpm.dependencies@1.0.0")
-CPMLoadDependenciesFile("${CMAKE_CURRENT_SOURCE_DIR}/cpm.dependencies")
-
 # check if this is the main project
 if (${PROJECT_IS_TOP_LEVEL})
     if (WIN32)
@@ -19,13 +15,12 @@ if (${PROJECT_IS_TOP_LEVEL})
     endif ()
 endif ()
 
-add_subdirectory(src/clice)
+include(cmake/CPM.cmake)
+CPMAddPackage("gh:SGSSGene/cpmpack@1.1.1")
+loadCPMPack("${CMAKE_CURRENT_SOURCE_DIR}/cpmpack.json")
+enable_testing()
 
-if (${PROJECT_IS_TOP_LEVEL})
-    enable_testing()
-
-    add_subdirectory(src/clice-demo "")
-    add_subdirectory(src/clice-demo2 "")
-    add_subdirectory(src/test_clice "")
-    add_subdirectory(src/test_header "")
+if (CLICE_USE_TDL)
+    target_link_libraries(clice INTERFACE tdl::tdl)
+    target_compile_definitions(clice INTERFACE CLICE_USE_TDL)
 endif ()

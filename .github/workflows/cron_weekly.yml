@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2006-2023, Knut Reinert & Freie Universität Berlin
-# SPDX-FileCopyrightText: 2016-2023, Knut Reinert & MPI für molekulare Genetik
+# SPDX-FileCopyrightText: 2023 Knut Reinert & Freie Universität Berlin
+# SPDX-FileCopyrightText: 2023 Knut Reinert & MPI für molekulare Genetik
 # SPDX-License-Identifier: CC0-1.0
 name: "Weekly CI"
 
@@ -23,10 +23,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {os: ubuntu-22.04, compiler: gcc15-cpp20-release-open_issue}
+          - {os: ubuntu-22.04, compiler: gcc-latest-cpp20-release-open_issue}
     steps:
       - name: Standard IV-project testing
-        uses: iv-project/IVaction@v10.13
+        uses: iv-project/IVaction@v11.1
         with:
           compiler: ${{ matrix.compiler }}
           threads: 2

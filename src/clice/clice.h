@@ -3,8 +3,5 @@
 #pragma once
 
 #include "parse.h"
-#include "generateHelp.h"
-
-#ifdef CLICE_USE_TDL
 #include "generateCWL.h"
-#endif
+#include "generateHelp.h"
