@@ -99,12 +99,12 @@ inline auto parseSingleDash(std::span<std::string_view> _args) -> std::optional<
 
             // Only add if all arguments have been found
             if (foundArgs.size() == splitArgs.size()) {
-                for (auto a : splitArgs) {
+                for (size_t j{1}; j < view.size(); ++j) {
+                    auto a = std::string{"-"} + view[j];
                     args.push_back(std::move(a));
                     argview.emplace_back(args.back());
                 }
             }
-
         }
     }
     return parse(argview, false);
