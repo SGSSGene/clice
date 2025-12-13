@@ -28,26 +28,26 @@
       "test_header": true
     },
     {
+      "if": "CLICE_BUILD_DEMO",
       "name": "clice-demo",
       "type": "executable",
-      "language": "cxx_std_20",
       "dependencies": [
         "clice::clice"
       ]
     },
     {
+      "if": "CLICE_BUILD_DEMO",
       "name": "clice-demo2",
       "type": "executable",
-      "language": "cxx_std_20",
       "dependencies": [
         "clice::clice"
       ]
     },
     {
+      "if": "CLICE_BUILD_TEST",
       "name": "test_clice",
       "type": "executable",
       "test": true,
-      "language": "cxx_std_20",
       "dependencies": [
         "clice::clice",
         "Catch2::Catch2WithMain",
@@ -71,7 +71,7 @@
       "github_repository": "deNBI-cibi/tool_description_lib"
     },
     {
-      "if": "PROJECT_IS_TOP_LEVEL",
+      "if": "CLICE_BUILD_TEST",
       "name": "Catch2",
       "version": "3.8.0",
       "github_repository": "catchorg/Catch2"
