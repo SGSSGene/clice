@@ -73,7 +73,7 @@
     {
       "if": "CLICE_BUILD_TEST",
       "name": "Catch2",
-      "version": "3.8.0",
+      "version": "3.14.0",
       "github_repository": "catchorg/Catch2"
     }
   ]
