@@ -31,4 +31,4 @@ jobs:
           compiler: ${{ matrix.compiler }}
           threads: 2
           cmake_flags: ${{ matrix.cmake_flags }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
