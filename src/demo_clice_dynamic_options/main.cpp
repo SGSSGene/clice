@@ -2,22 +2,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <clice/clice.h>
-#include <generator>
+#include <fmt/format.h>
 
 struct Module {
-/*    static std::generator<int> config(std::string name) {
-        clice::Argument cli {
-            .args = std::format("--{}", name),
-        };
-        clice::Argument args {
-            .parent = &cli,
-            .args   = "--option",
-        };
-
-        co_yield 0;
-    }
-    std::generator<int> x;*/
-
     std::string name;
     clice::Argument<> cli;
     clice::Argument<std::string> args {
@@ -28,7 +15,7 @@ struct Module {
     Module(std::string _name)
         : name{_name}
         , cli {
-            .args = std::format("--{}", name),
+            .args = fmt::format("--{}", name),
         }
     {
     }
