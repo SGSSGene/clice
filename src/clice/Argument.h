@@ -85,6 +85,9 @@ inline ArgumentBase::~ArgumentBase() {
         auto& children = Register::getInstance().arguments;
         children.erase(std::remove(children.begin(), children.end(), this), children.end());
     }
+    for (auto child : children) {
+        child->parent = nullptr;
+    }
 }
 
 inline void ArgumentBase::validateOrThrowInvariant() const {

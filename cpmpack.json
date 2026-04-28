@@ -44,6 +44,16 @@
       ]
     },
     {
+      "if": "CLICE_BUILD_DEMO",
+      "name": "test_clice_dynamic_options",
+      "type": "executable",
+      "test": true,
+      "language": "cxx_std_23",
+      "dependencies": [
+        "clice::clice"
+      ]
+    },
+    {
       "if": "CLICE_BUILD_TEST",
       "name": "test_clice",
       "type": "executable",
