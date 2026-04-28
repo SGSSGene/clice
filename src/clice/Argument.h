@@ -113,6 +113,14 @@ struct ListOfStrings : std::vector<std::string> {
     ListOfStrings(char const* str) {
         emplace_back(str);
     }
+    ListOfStrings(std::string str) {
+        emplace_back(str);
+    }
+    ListOfStrings(std::initializer_list<std::string> list) {
+        for (auto& l : list) {
+            emplace_back(std::move(l));
+        }
+    }
     ListOfStrings(std::initializer_list<char const*> list) {
         for (auto l : list) {
             emplace_back(l);
