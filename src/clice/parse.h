@@ -281,9 +281,10 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
             }
 
             // give it to the furthest up activeBase that has multi values
-            for (size_t j{0}; j < activeBases.size(); ++j) {
-                auto const& base = activeBases[activeBases.size()-j-1];
-                if (base->tags.contains("multi") && base->fromString) {
+            if (activeBases.size() > 0) {
+                auto const& base = activeBases[activeBases.size()-1];
+                if (base->tags.contains("multi") && base->fromString
+                    && (!base->ignorePrefix || !args[i].starts_with(*base->ignorePrefix))) {
                     base->fromString(args[i]);
                     return;
                 }
