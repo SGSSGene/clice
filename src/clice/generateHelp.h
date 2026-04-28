@@ -114,9 +114,10 @@ inline auto generateSynopsis() -> std::string {
     return ret;
 }
 
-inline auto generateSplitSynopsis() -> std::string {
+inline auto generateSplitSynopsis() -> std::tuple<size_t, std::string> {
     auto ret = std::string{};
     auto bases = std::vector<ArgumentBase const*>{};
+    size_t ct{};
     for (auto const& arg : Register::getInstance().arguments) {
         if (!arg->args.empty() and arg->args[0][0] != '-') {
             bases.emplace_back(arg);
@@ -126,6 +127,7 @@ inline auto generateSplitSynopsis() -> std::string {
     }
     if (ret.size() > 0) {
         ret = fmt::format("{} {}\n", argv0, ret);
+        ct += 1;
     }
     for (auto arg : bases) {
         auto s = generatePartialSynopsis(*arg);
@@ -133,8 +135,9 @@ inline auto generateSplitSynopsis() -> std::string {
         s.pop_back();
         s.erase(s.begin());
         ret = fmt::format("{}{} {}\n", ret, argv0, s);
+        ct += 1;
     }
-    return ret;
+    return {ct, ret};
 }
 
 inline auto generateHelp() -> std::string {
@@ -142,8 +145,10 @@ inline auto generateHelp() -> std::string {
 
     ret = fmt::format("Usage:\n");
     ret += generateSynopsis() + "\n\n";
-    ret += fmt::format("Subcommand usage:\n");
-    ret = ret + generateSplitSynopsis();
+    auto [ctSubCmds, subCmds] = generateSplitSynopsis();
+    if (ctSubCmds > 1) {
+        ret += fmt::format("Subcommand usage:\n{}", subCmds);
+    }
 
     auto& args = clice::Register::getInstance().arguments;
 

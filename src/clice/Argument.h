@@ -31,12 +31,14 @@ struct ArgumentBase {
     std::string                             desc;
     std::optional<std::vector<std::string>> mapping{};
     std::unordered_set<std::string>         tags;
+    std::optional<std::string>              ignorePrefix{}; // ignore values that start with this prefix
     std::optional<std::string>              completion{};
     std::function<std::vector<std::string>()> completion_fn;
     std::vector<ArgumentBase*>              children;  // child parameters
     bool                                    symlink{};  // a symlink for example to "slix-env" should actually call "slix env"
     std::type_index                         type_index;
 
+    bool isInit = false;
     std::function<void()> init;
     std::function<void(std::string_view)>       fromString;
     std::function<std::optional<std::string>()> toString;
@@ -83,6 +85,9 @@ inline ArgumentBase::~ArgumentBase() {
         auto& children = Register::getInstance().arguments;
         children.erase(std::remove(children.begin(), children.end(), this), children.end());
     }
+    for (auto child : children) {
+        child->parent = nullptr;
+    }
 }
 
 inline void ArgumentBase::validateOrThrowInvariant() const {
@@ -113,6 +118,14 @@ struct ListOfStrings : std::vector<std::string> {
     ListOfStrings(char const* str) {
         emplace_back(str);
     }
+    ListOfStrings(std::string str) {
+        emplace_back(str);
+    }
+    ListOfStrings(std::initializer_list<std::string> list) {
+        for (auto& l : list) {
+            emplace_back(std::move(l));
+        }
+    }
     ListOfStrings(std::initializer_list<char const*> list) {
         for (auto l : list) {
             emplace_back(l);
@@ -136,10 +149,11 @@ struct Argument {
     std::string                desc{};
     bool                       isSet{};   // (not for the user)
     T                          value{};
+    std::optional<std::string> ignorePrefix{}; // ignore values that start with this prefix
     std::optional<std::string> suffix{};  // require a suffix like "b" (bytes) or "s" (seconds)
     mutable std::any           anyType{}; // used if T is a callback (not for the user)
     std::function<std::vector<std::string>()> completion{};
-    CBType                                            cb{};
+    CBType                                            cb{[]{}};
     size_t                                            cb_priority{100}; // lower priorities will be triggered before larger ones
     std::optional<std::unordered_map<std::string, T>> mapping{};
     std::unordered_set<std::string>                   tags{};  // known tags "required"
@@ -179,11 +193,12 @@ struct Argument {
         CTor(Argument& desc)
             : arg { desc.parent?&desc.parent->storage.arg:nullptr, detectType()}
         {
-            arg.args    = desc.args;
-            arg.env     = desc.env;
-            arg.id      = desc.id;
-            arg.symlink = desc.symlink;
-            arg.desc    = desc.desc;
+            arg.args         = desc.args;
+            arg.env          = desc.env;
+            arg.id           = desc.id;
+            arg.symlink      = desc.symlink;
+            arg.desc         = desc.desc;
+            arg.ignorePrefix = desc.ignorePrefix;
             arg.validateOrThrowInvariant();
 
             if (desc.completion) {
@@ -217,12 +232,18 @@ struct Argument {
                 if constexpr (requires() {
                     { desc.cb() };
                 }) {
-                    arg.cb = desc.cb;
+                    arg.cb = [&]() {
+                        if (arg.isInit) return;
+                        desc.cb();
+                        arg.isInit = true;
+                    };
                 } else if constexpr (requires() {
                     { desc.cb(*desc) };
                 }) {
                     arg.cb = [&]() {
+                        if (arg.isInit) return;
                         desc.cb(*desc);
+                        arg.isInit = true;
                     };
                 }
                 arg.cb_priority = desc.cb_priority;

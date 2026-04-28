@@ -266,5 +266,46 @@ TEST_CASE("check clice::Argument", "argument") {
         }
     }
 
+    SECTION("arguments as children") {
+        auto cliOptA = clice::Argument {
+            .args = "--parent",
+        };
+        auto cliOptB = clice::Argument {
+            .parent = &cliOptA,
+            .args   = "--opt",
+            .value  = std::string{},
+        };
+
+
+        auto args = std::vector<std::string_view>{"app", "--parent", "--opt", "blub"};
+        clice::parse(args);
+        CHECK(cliOptA);
+        CHECK(cliOptB);
+    }
+
+    SECTION("dynamic parameters") {
+        auto cliOptA = clice::Argument {
+            .args = "--parent",
+        };
+
+        auto cliOptLoad = clice::Argument {
+            .args = "--load",
+            .cb   = [&]() {
+                static auto cliOptB = clice::Argument {
+                    .parent = &cliOptA,
+                    .args   = "--opt",
+                    .value  = std::string{},
+                };
+            }
+        };
+
+
+        auto args = std::vector<std::string_view>{"app", "--load", "--parent", "--opt", "blub"};
+        auto unprocessed = std::vector<std::string_view>{};
+        unprocessed.emplace_back("app");
+        clice::parse(args, /*.allowDashCombi=*/false, &unprocessed);
+        CHECK(cliOptA);
+        CHECK(cliOptLoad);
+    }
 
 }
