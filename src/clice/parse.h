@@ -57,10 +57,10 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
 }
 }
 
-auto parse(int argc, char const* const* argv, bool allowDashCombi = false) -> std::optional<std::string>;
-auto parse(std::span<std::string_view> args, bool allowDashCombi = false) -> std::optional<std::string>;
+auto parse(int argc, char const* const* argv, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr) -> std::optional<std::string>;
+auto parse(std::span<std::string_view> args, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr) -> std::optional<std::string>;
 
-inline auto parseSingleDash(std::span<std::string_view> _args) -> std::optional<std::string> {
+inline auto parseSingleDash(std::span<std::string_view> _args, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
     auto args   = std::list<std::string>{};
     auto argview = std::vector<std::string_view>{};
     bool allTrailing{false};
@@ -107,15 +107,15 @@ inline auto parseSingleDash(std::span<std::string_view> _args) -> std::optional<
             }
         }
     }
-    return parse(argview, false);
+    return parse(argview, false, unprocessedParameters);
 }
 
-inline auto parseSingleDash(int _argc, char const* const* _argv) -> std::optional<std::string> {
+inline auto parseSingleDash(int _argc, char const* const* _argv, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
     auto args = std::vector<std::string_view>{};
     for (int i{0}; i < _argc; ++i) {
         args.emplace_back(_argv[i]);
     }
-    return parseSingleDash(args);
+    return parseSingleDash(args, unprocessedParameters);
 }
 
 
@@ -137,9 +137,9 @@ inline auto createParameterStrList(std::vector<std::string> const& args) -> std:
  * allowDashCombi: allows flags like "-a -b" be combined to "-ab"
  */
 
-inline auto parse(std::span<std::string_view> args, bool allowDashCombi) -> std::optional<std::string> {
+inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
     if (allowDashCombi) {
-        return parseSingleDash(args);
+        return parseSingleDash(args, unprocessedParameters);
     }
     assert(args.size() > 0);
 
@@ -289,8 +289,13 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi) -> std:
                 }
             }
 
-
-            throw std::runtime_error{std::string{"unexpected cli argument \""} + std::string{args[i]} + "\""};
+            if (unprocessedParameters) {
+                for (;i < args.size(); ++i) {
+                    unprocessedParameters->push_back(args[i]);
+                }
+            } else {
+                throw std::runtime_error{std::string{"unexpected cli argument \""} + std::string{args[i]} + "\""};
+            }
         }();
     }
     if (completion) {
@@ -379,20 +384,21 @@ struct Parse {
     bool helpOpt{false};         // automatically registers --help option
     bool catchExceptions{false}; // catches exception and prints them
     std::function<void()> run{}; // function to run
+    std::vector<std::string_view>* unprocessedParameters{};
 };
-inline auto parse(int argc, char const* const* argv, bool allowDashCombi) -> std::optional<std::string> {
+inline auto parse(int argc, char const* const* argv, bool allowDashCombi, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
     auto args = std::vector<std::string_view>{};
     for (int i{0}; i < argc; ++i) {
         args.emplace_back(argv[i]);
     }
-    return parse(args, allowDashCombi);
+    return parse(args, allowDashCombi, unprocessedParameters);
 }
 
 
 inline void parse(Parse const& parse) {
     auto f = [&]() {
         auto [argc, argv] = parse.args;
-        if (auto failed = clice::parse(argc, argv, parse.allowDashCombi); failed) {
+        if (auto failed = clice::parse(argc, argv, parse.allowDashCombi, parse.unprocessedParameters); failed) {
             std::cerr << "parsing failed: " << *failed << "\n";
             std::exit(1);
         }
