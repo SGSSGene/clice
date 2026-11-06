@@ -3,12 +3,16 @@
 #pragma once
 
 #include <algorithm>
+#include <charconv>
+#include <cstdint>
 #include <filesystem>
+#include <limits>
 #include <locale>
 #include <numbers>
 #include <optional>
 #include <ranges>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -110,40 +114,70 @@ auto parseFromString(std::string_view _str) -> T {
         return _str[0];
     } else if constexpr (std::numeric_limits<T>::is_exact) {
         // parse all integer-like types
-        auto ret = T{};
+        // Format: [+-][0x|0b]digits[suffix], digits may be separated by '
+        // Numbers are decimal by default (leading zeros do not mean octal).
 
         // remove potential ' separator
         str.erase(std::remove(str.begin(), str.end(), '\''), str.end());
 
-        auto base = int{0};
-        char const* strBegin = str.data();
-        char const* strEnd   = str.data() + str.size();
-        std::size_t nextIdx=0;
-        if (str.find("0b") == 0) {
+        auto outOfRange = [&]() {
+            return std::runtime_error{"integer \"" + str + "\" out of range ["
+                                      + std::to_string(std::numeric_limits<T>::min()) + ", "
+                                      + std::to_string(std::numeric_limits<T>::max()) + "]"};
+        };
+
+        char const* iter = str.data();
+        char const* end  = str.data() + str.size();
+
+        bool negative = false;
+        if (iter != end && (*iter == '+' || *iter == '-')) {
+            negative = (*iter == '-');
+            ++iter;
+        }
+        auto base = int{10};
+        if (end - iter >= 2 && iter[0] == '0' && (iter[1] == 'x' || iter[1] == 'X')) {
+            base = 16;
+            iter += 2;
+        } else if (end - iter >= 2 && iter[0] == '0' && (iter[1] == 'b' || iter[1] == 'B')) {
             base = 2;
-            strBegin += 2;
+            iter += 2;
         }
-        try {
-            if constexpr (std::is_unsigned_v<T>) {
-                ret = std::stoull(strBegin, &nextIdx, base);
-            } else {
-                ret = std::stoll(strBegin, &nextIdx, base);
-            }
-        } catch (std::invalid_argument const&) {
-            throw std::runtime_error{std::string{"not a valid integer \""} + str + "\""};
+
+        // parse the magnitude (without sign)
+        auto magnitude = uint64_t{};
+        auto [ptr, ec] = std::from_chars(iter, end, magnitude, base);
+        if (ec == std::errc::invalid_argument) {
+            throw std::runtime_error{"not a valid integer \"" + str + "\""};
+        } else if (ec == std::errc::result_out_of_range) {
+            throw outOfRange();
         }
+
         // if we didn't parse everything check if it has some known suffix
-        if (static_cast<int>(nextIdx) != strEnd - strBegin) {
-            if constexpr (not std::is_same_v<bool, T>) {
-                auto suffix = std::string_view{strBegin + nextIdx};
-                auto value = parseSuffix<T>(suffix);
-                if (not value) {
-                    throw std::runtime_error{std::string{"unknown integer suffix \""} + str + "\""};
-                }
-                ret *= value.value();
+        if (ptr != end) {
+            auto factor = parseSuffix<uint64_t>(std::string_view{ptr, end});
+            if (!factor) {
+                throw std::runtime_error{"unknown integer suffix \"" + str + "\""};
             }
+            if (magnitude > std::numeric_limits<uint64_t>::max() / *factor) {
+                throw outOfRange();
+            }
+            magnitude *= *factor;
         }
-        return ret;
+
+        // apply sign and check if it fits into T
+        auto maxValue = static_cast<uint64_t>(std::numeric_limits<T>::max());
+        if (!negative) {
+            if (magnitude > maxValue) throw outOfRange();
+            return static_cast<T>(magnitude);
+        }
+        if (magnitude == 0) return T{};
+        if constexpr (std::is_unsigned_v<T>) {
+            throw outOfRange();
+        } else {
+            // |min| == max + 1 (two's complement)
+            if (magnitude > maxValue + 1) throw outOfRange();
+            return static_cast<T>(-static_cast<T>(magnitude - 1) - 1);
+        }
 
     } else if constexpr (std::is_enum_v<T>) {
         using UT = std::underlying_type_t<T>;

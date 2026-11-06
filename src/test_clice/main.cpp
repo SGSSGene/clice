@@ -455,6 +455,58 @@ TEST_CASE("check clice::Argument", "argument") {
         }
     }
 
+    SECTION("integers - format") {
+        using clice::parseFromString;
+        CHECK(parseFromString<int>("010") == 10);  // decimal, not octal
+        CHECK(parseFromString<int>("08") == 8);
+        CHECK(parseFromString<int>("0x1F") == 31);
+        CHECK(parseFromString<int>("0X1f") == 31);
+        CHECK(parseFromString<int>("0b101") == 5);
+        CHECK(parseFromString<int>("-0x10") == -16);
+        CHECK(parseFromString<int>("+5") == 5);
+        CHECK(parseFromString<int>("-5") == -5);
+        CHECK(parseFromString<int>("1'000") == 1000);
+        CHECK(parseFromString<int>("-2k") == -2000);
+        CHECK(parseFromString<unsigned>("-0") == 0);
+
+        for (auto v : {"", "abc", "-", "+", "0x", "0b2", "--5", "5 "}) {
+            INFO(v);
+            CHECK_THROWS_WITH(parseFromString<int>(v), Catch::Matchers::ContainsSubstring("not a valid integer")
+                                                    || Catch::Matchers::ContainsSubstring("unknown integer suffix"));
+        }
+        CHECK_THROWS_WITH(parseFromString<int>("12q"), "unknown integer suffix \"12q\"");
+    }
+
+    SECTION("integers - range checks") {
+        using clice::parseFromString;
+        CHECK(parseFromString<uint8_t>("255") == 255);
+        CHECK(parseFromString<int8_t>("127") == 127);
+        CHECK(parseFromString<int8_t>("-128") == -128);
+        CHECK(parseFromString<uint64_t>("18446744073709551615") == std::numeric_limits<uint64_t>::max());
+        CHECK(parseFromString<int64_t>("9223372036854775807") == std::numeric_limits<int64_t>::max());
+        CHECK(parseFromString<int64_t>("-9223372036854775808") == std::numeric_limits<int64_t>::min());
+        CHECK(parseFromString<uint64_t>("15Ei") == 15ull << 60);
+
+        CHECK_THROWS_WITH(parseFromString<uint8_t>("300"), "integer \"300\" out of range [0, 255]");
+        CHECK_THROWS_WITH(parseFromString<int8_t>("-129"), "integer \"-129\" out of range [-128, 127]");
+        CHECK_THROWS(parseFromString<int8_t>("128"));
+        CHECK_THROWS(parseFromString<uint8_t>("1k"));
+        CHECK_THROWS(parseFromString<unsigned>("-1"));
+        CHECK_THROWS(parseFromString<size_t>("-1"));
+        CHECK_THROWS(parseFromString<int>("5000000000"));
+        CHECK_THROWS(parseFromString<uint64_t>("18446744073709551616"));
+        CHECK_THROWS(parseFromString<int64_t>("9223372036854775808"));
+        CHECK_THROWS(parseFromString<int64_t>("-9223372036854775809"));
+        CHECK_THROWS(parseFromString<uint64_t>("16Ei")); // 2^64, suffix overflow
+        CHECK_THROWS(parseFromString<uint64_t>("99999999999999999999"));
+    }
+
+    SECTION("integers - range error through clice::Argument") {
+        auto cliOpt1 = clice::Argument{ .args = "--n", .value = uint8_t{0} };
+        auto args = std::vector<std::string_view>{"app", "--n", "300"};
+        CHECK_THROWS_WITH(clice::parse(args), "integer \"300\" out of range [0, 255]");
+    }
+
     SECTION("floats - exa suffix vs exponent") {
         auto cliOpt1 = clice::Argument{ .args   = "--opt1",
                                         .value  = std::vector<double>{}};
