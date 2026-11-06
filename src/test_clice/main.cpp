@@ -533,6 +533,36 @@ TEST_CASE("check clice::Argument", "argument") {
         }
     }
 
+    SECTION("callbacks") {
+        // note: callbacks with invalid signatures (e.g. cb(int, int)) are rejected at compile time
+        int calledFlag{};
+        int calledNoArg{};
+        int receivedValue{};
+        auto cliFlag  = clice::Argument{ .args = "--flag",
+                                         .cb   = [&]() { ++calledFlag; } };
+        auto cliNoArg = clice::Argument{ .args  = "--a",
+                                         .value = int{0},
+                                         .cb    = [&]() { ++calledNoArg; } };
+        auto cliValue = clice::Argument{ .args  = "--b",
+                                         .value = int{0},
+                                         .cb    = [&](int v) { receivedValue = v; } };
+
+        SECTION("not given, callbacks not called") {
+            auto args = std::vector<std::string_view>{"app"};
+            clice::parse(args);
+            CHECK(calledFlag == 0);
+            CHECK(calledNoArg == 0);
+            CHECK(receivedValue == 0);
+        }
+        SECTION("given, callbacks called") {
+            auto args = std::vector<std::string_view>{"app", "--flag", "--a", "3", "--b", "7"};
+            clice::parse(args);
+            CHECK(calledFlag == 1);
+            CHECK(calledNoArg == 1);
+            CHECK(receivedValue == 7);
+        }
+    }
+
     SECTION("arguments as children") {
         auto cliOptA = clice::Argument {
             .args = "--parent",
