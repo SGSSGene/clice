@@ -284,6 +284,63 @@ TEST_CASE("check clice::Argument", "argument") {
         }
     }
 
+    SECTION("required arguments can be given via environment variable") {
+        auto args = std::vector<std::string_view>{"app"};
+
+        SECTION("required option") {
+            auto cliOpt = clice::Argument{ .args  = "--n",
+                                           .env   = {"CLICE_TEST_N"},
+                                           .value = int{1},
+                                           .tags  = {"required"},
+            };
+            SECTION("env set") {
+                auto env = ScopedEnv{"CLICE_TEST_N", "5"};
+                clice::parse(args);
+                CHECK(cliOpt);
+                CHECK(*cliOpt == 5);
+            }
+            SECTION("env not set") {
+                CHECK_THROWS_WITH(clice::parse(args), Catch::Matchers::ContainsSubstring("\"--n\" is a required parameter"));
+            }
+        }
+
+        SECTION("required flag") {
+            auto cliFlag = clice::Argument{ .args = "--flag",
+                                            .env  = {"CLICE_TEST_FLAG"},
+                                            .tags = {"required"},
+            };
+            SECTION("env set") {
+                auto env = ScopedEnv{"CLICE_TEST_FLAG", "1"};
+                clice::parse(args);
+                CHECK(cliFlag);
+            }
+            SECTION("env set to false-like value") {
+                auto env = ScopedEnv{"CLICE_TEST_FLAG", "0"};
+                CHECK_THROWS_WITH(clice::parse(args), Catch::Matchers::ContainsSubstring("\"--flag\" is a required parameter"));
+            }
+        }
+
+        SECTION("required child option") {
+            auto cliParent = clice::Argument{ .args = "cmd" };
+            auto cliChild  = clice::Argument{ .parent = &cliParent,
+                                              .args   = "--n",
+                                              .env    = {"CLICE_TEST_N"},
+                                              .value  = int{1},
+                                              .tags   = {"required"},
+            };
+            auto argsCmd = std::vector<std::string_view>{"app", "cmd"};
+            SECTION("env set") {
+                auto env = ScopedEnv{"CLICE_TEST_N", "5"};
+                clice::parse(argsCmd);
+                CHECK(cliParent);
+                CHECK(*cliChild == 5);
+            }
+            SECTION("env not set") {
+                CHECK_THROWS_WITH(clice::parse(argsCmd), Catch::Matchers::ContainsSubstring("\"--n\" is required (enforced by \"cmd\")"));
+            }
+        }
+    }
+
     SECTION("env-only flag does not consume positional arguments") {
         auto cliFlag = clice::Argument{ .env = {"CLICE_TEST_FLAG"} };
         auto cliPos  = clice::Argument{ .value = int{0} };

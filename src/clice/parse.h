@@ -15,6 +15,7 @@
 #include <map>
 #include <set>
 #include <span>
+#include <unordered_set>
 
 namespace clice {
 
@@ -188,6 +189,10 @@ inline void parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
         exit(0);
     }
 
+    // arguments that received their value through an environment variable
+    // (they count as given, e.g. when checking "required" arguments)
+    auto setByEnv = std::unordered_set<ArgumentBase const*>{};
+
     // check environment variables first
     {
         using CB = std::function<void(ArgumentBase&, std::string)>;
@@ -215,11 +220,15 @@ inline void parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
                         throw std::runtime_error{"environment variable " + env + ": " + e.what()};
                     }
                 }
-                if (isTrue) arg.init();
+                if (isTrue) {
+                    arg.init();
+                    setByEnv.insert(&arg);
+                }
                 return;
             }
             arg.init();
             arg.fromString(value);
+            setByEnv.insert(&arg);
         });
     }
 
@@ -377,6 +386,12 @@ inline void parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
         }
     }
 
+    // an argument counts as given, if it was given on the command line or via environment variable
+    auto isGiven = [&](ArgumentBase const* arg) {
+        return std::ranges::find(activeBases, arg) != activeBases.end()
+            || setByEnv.contains(arg);
+    };
+
     // check if all active arguments got parameters
     for (size_t j{0}; j < activeBases.size(); ++j) {
         auto const& base = activeBases[activeBases.size()-j-1];
@@ -386,7 +401,7 @@ inline void parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
         }
         for (auto child : base->children) {
             if (child->tags.contains("required")) {
-                if (std::ranges::find(activeBases, child) == activeBases.end()) {
+                if (!isGiven(child)) {
                     auto option = createParameterStrList(base->args);
                     auto suboption = createParameterStrList(child->args);
                     throw std::runtime_error{"option " + child->id + "\"" + suboption + "\" is required (enforced by \"" + option + "\")"};
@@ -398,7 +413,7 @@ inline void parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
     // check if all top level arguments got parameters
     for (auto base : Register::getInstance().arguments) {
         if (base->tags.contains("required")) {
-            if (std::ranges::find(activeBases, base) == activeBases.end()) {
+            if (!isGiven(base)) {
                 auto option = createParameterStrList(base->args);
                 throw std::runtime_error{"option " + base->id + " \"" + option + "\" is a required parameter"};
             }
