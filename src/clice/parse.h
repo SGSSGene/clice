@@ -137,6 +137,12 @@ inline void parseSingleDash(int _argc, char const* const* _argv, std::vector<std
 }
 
 
+// a flag is an argument without a value type (it never accepts values)
+// which is indicated by its value type being set to std::nullptr_t
+inline auto isFlag(ArgumentBase const& arg) -> bool {
+    return arg.type_index == std::type_index(typeid(std::nullptr_t));
+}
+
 // creates a string like "-i, --input"
 inline auto createParameterStrList(std::vector<std::string> const& args) -> std::string {
     auto param = std::string{};
@@ -195,10 +201,25 @@ inline void parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
             }
         };
         visitAllArguments(Register::getInstance().arguments, [&](ArgumentBase& arg, std::string env) {
-            if (auto ptr = std::getenv(env.c_str()); ptr) {
-                arg.init();
-                arg.fromString(std::string_view{ptr});
+            auto ptr = std::getenv(env.c_str());
+            if (!ptr) return;
+            auto value = std::string_view{ptr};
+            if (isFlag(arg)) {
+                // flags take no value: an empty or true-like value sets the flag,
+                // a false-like value ("0", "false", "no") leaves it unset
+                auto isTrue = value.empty();
+                if (!isTrue) {
+                    try {
+                        isTrue = parseFromString<bool>(value);
+                    } catch (std::exception const& e) {
+                        throw std::runtime_error{"environment variable " + env + ": " + e.what()};
+                    }
+                }
+                if (isTrue) arg.init();
+                return;
             }
+            arg.init();
+            arg.fromString(value);
         });
     }
 
@@ -275,7 +296,7 @@ inline void parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
             for (size_t j{0}; j < activeBases.size(); ++j) {
                 auto const& base = activeBases[activeBases.size()-j-1];
                 for (auto arg : base->children) {
-                    if (arg->args.empty() && arg->init) {
+                    if (arg->args.empty() && !isFlag(*arg) && arg->init) {
                         arg->init();
                         if (!arg->tags.contains("multi")) arg->init = nullptr;
                         activeBases.push_back(arg);
@@ -287,7 +308,7 @@ inline void parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
 
             // second check root arguments
             for (auto arg : Register::getInstance().arguments) {
-                if (arg->args.empty()) {
+                if (arg->args.empty() && !isFlag(*arg)) {
                     if (arg->init) {
                         arg->init();
                         if (!arg->tags.contains("multi")) arg->init = nullptr;

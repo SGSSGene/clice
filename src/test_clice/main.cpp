@@ -5,9 +5,35 @@
 #include <clice/clice.h>
 #include <catch2/catch_all.hpp>
 
+#include <cstdlib>
+#include <string>
+
 template <typename T>
 concept dereferencable = requires(T t) {
     { *t };
+};
+
+// sets an environment variable for the lifetime of this object
+struct ScopedEnv {
+    std::string name;
+    ScopedEnv(std::string _name, std::string const& value)
+        : name{std::move(_name)}
+    {
+#ifdef _WIN32
+        _putenv_s(name.c_str(), value.c_str());
+#else
+        setenv(name.c_str(), value.c_str(), 1);
+#endif
+    }
+    ~ScopedEnv() {
+#ifdef _WIN32
+        _putenv_s(name.c_str(), "");
+#else
+        unsetenv(name.c_str());
+#endif
+    }
+    ScopedEnv(ScopedEnv const&) = delete;
+    auto operator=(ScopedEnv const&) -> ScopedEnv& = delete;
 };
 
 TEST_CASE("check clice::Argument", "argument") {
@@ -206,6 +232,68 @@ TEST_CASE("check clice::Argument", "argument") {
         }
 
         static_assert(dereferencable<decltype(cliOpt1)>, "check that cliOpt1 can be dereferenced");
+    }
+
+    SECTION("flag set via environment variable") {
+        auto cliFlag = clice::Argument{ .args = "--flag",
+                                        .env  = {"CLICE_TEST_FLAG"},
+        };
+        auto args = std::vector<std::string_view>{"app"};
+
+        SECTION("env not set") {
+            clice::parse(args);
+            CHECK(!cliFlag);
+        }
+
+        SECTION("true-like values set the flag") {
+            for (auto v : {"1", "true", "TRUE", "yes"}) {
+                INFO(v);
+                auto env = ScopedEnv{"CLICE_TEST_FLAG", v};
+                auto cliFlag2 = clice::Argument{ .args = "--flag2",
+                                                 .env  = {"CLICE_TEST_FLAG"},
+                };
+                clice::parse(args);
+                CHECK(cliFlag2);
+            }
+        }
+
+#ifndef _WIN32 // windows can't store empty environment variables
+        SECTION("empty value sets the flag") {
+            auto env = ScopedEnv{"CLICE_TEST_FLAG", ""};
+            clice::parse(args);
+            CHECK(cliFlag);
+        }
+#endif
+
+        SECTION("false-like values leave the flag unset") {
+            for (auto v : {"0", "false", "no"}) {
+                INFO(v);
+                auto env = ScopedEnv{"CLICE_TEST_FLAG", v};
+                auto cliFlag2 = clice::Argument{ .args = "--flag2",
+                                                 .env  = {"CLICE_TEST_FLAG"},
+                };
+                clice::parse(args);
+                CHECK(!cliFlag2);
+            }
+        }
+
+        SECTION("invalid value is reported") {
+            auto env = ScopedEnv{"CLICE_TEST_FLAG", "maybe"};
+            CHECK_THROWS_WITH(clice::parse(args),
+                              "environment variable CLICE_TEST_FLAG: invalid boolean specifier \"maybe\"");
+        }
+    }
+
+    SECTION("env-only flag does not consume positional arguments") {
+        auto cliFlag = clice::Argument{ .env = {"CLICE_TEST_FLAG"} };
+        auto cliPos  = clice::Argument{ .value = int{0} };
+
+        auto env  = ScopedEnv{"CLICE_TEST_FLAG", "1"};
+        auto args = std::vector<std::string_view>{"app", "12"};
+        clice::parse(args);
+        CHECK(cliFlag);
+        CHECK(cliPos);
+        CHECK(*cliPos == 12);
     }
 
     SECTION("splitting arguments") {
