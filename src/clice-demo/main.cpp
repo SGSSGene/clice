@@ -326,10 +326,7 @@ auto cliEnvVariable2 = clice::Argument {
 
 int main(int argc, char** argv) {
     try {
-        if (auto failed = clice::parse(argc, argv, /*.allowDashCombi=*/true); failed) {
-            std::cerr << "parsing failed: " << *failed << "\n";
-            return 1;
-        }
+        clice::parse(argc, argv, /*.allowDashCombi=*/true);
 
         std::cout << cliAdd << "\n";
         std::cout << "  " << cliVerbose << "\n";

@@ -58,8 +58,8 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
 }
 }
 
-auto parse(int argc, char const* const* argv, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr) -> std::optional<std::string>;
-auto parse(std::span<std::string_view> args, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr) -> std::optional<std::string>;
+void parse(int argc, char const* const* argv, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr);;
+void parse(std::span<std::string_view> args, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr);
 
 // A fixed/static list of all -a...-z -A....-Z and all other variant -\0 -\n -@ etc.
 // This can be used to return a single dash variable;
@@ -76,7 +76,7 @@ inline auto singleDashArg(char c) -> std::string_view {
     return {table[static_cast<int>(c)].data(), 2};
 }
 
-inline auto parseSingleDash(std::span<std::string_view> _args, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
+inline void parseSingleDash(std::span<std::string_view> _args, std::vector<std::string_view>* unprocessedParameters) {
     auto argview = std::vector<std::string_view>{};
     bool allTrailing{false};
     for (size_t i{0}; i < _args.size(); ++i) {
@@ -120,15 +120,15 @@ inline auto parseSingleDash(std::span<std::string_view> _args, std::vector<std::
             }
         }
     }
-    return parse(argview, false, unprocessedParameters);
+    parse(argview, false, unprocessedParameters);
 }
 
-inline auto parseSingleDash(int _argc, char const* const* _argv, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
+inline void parseSingleDash(int _argc, char const* const* _argv, std::vector<std::string_view>* unprocessedParameters) {
     auto args = std::vector<std::string_view>{};
     for (int i{0}; i < _argc; ++i) {
         args.emplace_back(_argv[i]);
     }
-    return parseSingleDash(args, unprocessedParameters);
+    parseSingleDash(args, unprocessedParameters);
 }
 
 
@@ -150,9 +150,10 @@ inline auto createParameterStrList(std::vector<std::string> const& args) -> std:
  * allowDashCombi: allows flags like "-a -b" be combined to "-ab"
  */
 
-inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
+inline void parse(std::span<std::string_view> args, bool allowDashCombi, std::vector<std::string_view>* unprocessedParameters) {
     if (allowDashCombi) {
-        return parseSingleDash(args, unprocessedParameters);
+        parseSingleDash(args, unprocessedParameters);
+        return;
     }
     assert(args.size() > 0);
 
@@ -387,8 +388,6 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
             }
         }
     }
-
-    return std::nullopt;
 }
 
 struct Parse {
@@ -400,22 +399,19 @@ struct Parse {
     std::function<void()> run{}; // function to run
     std::vector<std::string_view>* unprocessedParameters{};
 };
-inline auto parse(int argc, char const* const* argv, bool allowDashCombi, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
+inline void parse(int argc, char const* const* argv, bool allowDashCombi, std::vector<std::string_view>* unprocessedParameters) {
     auto args = std::vector<std::string_view>{};
     for (int i{0}; i < argc; ++i) {
         args.emplace_back(argv[i]);
     }
-    return parse(args, allowDashCombi, unprocessedParameters);
+    parse(args, allowDashCombi, unprocessedParameters);
 }
 
 
 inline void parse(Parse const& parse) {
     auto f = [&]() {
         auto [argc, argv] = parse.args;
-        if (auto failed = clice::parse(argc, argv, parse.allowDashCombi, parse.unprocessedParameters); failed) {
-            std::cerr << "parsing failed: " << *failed << "\n";
-            std::exit(1);
-        }
+        clice::parse(argc, argv, parse.allowDashCombi, parse.unprocessedParameters);
 
         if (parse.run) {
             parse.run();

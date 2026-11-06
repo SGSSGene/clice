@@ -49,10 +49,7 @@ int main(int argc, char** argv) {
     auto unprocessed = std::vector<std::string_view>{};
     unprocessed.emplace_back(argv[0]);
     do {
-        if (auto failed = clice::parse(args, /*.allowDashCombi=*/true, &unprocessed); failed) {
-            std::cerr << "parsing failed: " << *failed << "\n";
-            return 1;
-        }
+        clice::parse(args, /*.allowDashCombi=*/true, &unprocessed);
         std::swap(unprocessed, args);
         unprocessed.resize(1);
     } while (args.size() > 1);
