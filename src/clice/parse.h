@@ -6,6 +6,7 @@
 #include "generateHelp.h"
 #include "printCompletion.h"
 
+#include <array>
 #include <cassert>
 #include <cstdlib>
 #include <fmt/format.h>
@@ -60,8 +61,22 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
 auto parse(int argc, char const* const* argv, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr) -> std::optional<std::string>;
 auto parse(std::span<std::string_view> args, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr) -> std::optional<std::string>;
 
+// A fixed/static list of all -a...-z -A....-Z and all other variant -\0 -\n -@ etc.
+// This can be used to return a single dash variable;
+// Returns a view onto a static "-c" string. The view stays valid for the
+// lifetime of the program, so it can safely end up in unprocessedParameters.
+inline auto singleDashArg(char c) -> std::string_view {
+    static auto const table = [] {
+        auto t = std::array<std::array<char, 2>, 256>{};
+        for (size_t i{0}; i < t.size(); ++i) {
+            t[i] = {'-', static_cast<char>(i)};
+        }
+        return t;
+    }();
+    return {table[static_cast<int>(c)].data(), 2};
+}
+
 inline auto parseSingleDash(std::span<std::string_view> _args, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
-    auto args   = std::list<std::string>{};
     auto argview = std::vector<std::string_view>{};
     bool allTrailing{false};
     for (size_t i{0}; i < _args.size(); ++i) {
@@ -100,9 +115,7 @@ inline auto parseSingleDash(std::span<std::string_view> _args, std::vector<std::
             // Only add if all arguments have been found
             if (foundArgs.size() == splitArgs.size()) {
                 for (size_t j{1}; j < view.size(); ++j) {
-                    auto a = std::string{"-"} + view[j];
-                    args.push_back(std::move(a));
-                    argview.emplace_back(args.back());
+                    argview.emplace_back(singleDashArg(view[j]));
                 }
             }
         }

@@ -219,6 +219,21 @@ TEST_CASE("check clice::Argument", "argument") {
         CHECK(*cliOpt1 == std::vector<int>{});
     }
 
+    SECTION("splitting arguments - split args survive in unprocessedParameters") {
+        auto cliA = clice::Argument{ .args = "-a" };
+        auto cliB = clice::Argument{ .args = "-b" };
+
+        auto unprocessed = std::vector<std::string_view>{};
+        {
+            auto args = std::vector<std::string_view>{"app", "--unknown", "-ab"};
+            clice::parse(args, /*.allowDashCombi=*/true, &unprocessed);
+        }
+        // views must still be valid after parse() returned
+        CHECK(unprocessed == std::vector<std::string_view>{"--unknown", "-a", "-b"});
+        CHECK(!cliA);
+        CHECK(!cliB);
+    }
+
     SECTION("arguments with magnitude suffix") {
         auto cliOpt1 = clice::Argument{ .args   = "--opt1",
                                         .value  = std::vector<size_t>{}};
