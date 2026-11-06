@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <locale>
 #include <numbers>
 #include <optional>
 #include <ranges>
@@ -157,17 +158,46 @@ auto parseFromString(std::string_view _str) -> T {
         // remove potential ' separator
         str.erase(std::remove(str.begin(), str.end(), '\''), str.end());
 
+        // Find the end of the numeric part: [+-]digits[.digits][(e|E)[+-]digits]
+        // The exponent is only part of the number if digits follow, otherwise
+        // 'E' is the exa suffix (e.g. "1E" or "1Ei").
+        auto numberEnd = [&]() -> size_t {
+            auto isDigit = [&](size_t i) {
+                return i < str.size() && str[i] >= '0' && str[i] <= '9';
+            };
+            auto isSign = [&](size_t i) {
+                return i < str.size() && (str[i] == '+' || str[i] == '-');
+            };
+            size_t i{0};
+            size_t digitCount{0};
+            if (isSign(i)) ++i;
+            for (; isDigit(i); ++i) ++digitCount;
+            if (i < str.size() && str[i] == '.') {
+                ++i;
+                for (; isDigit(i); ++i) ++digitCount;
+            }
+            if (digitCount == 0) {
+                throw std::runtime_error{std::string{"not a valid floating-point number \""} + str + "\""};
+            }
+            if (i < str.size() && (str[i] == 'e' || str[i] == 'E')) {
+                auto j = i+1;
+                if (isSign(j)) ++j;
+                if (isDigit(j)) {
+                    for (i = j; isDigit(i); ++i) {}
+                }
+            }
+            return i;
+        }();
+
         auto ret = T{};
-        auto ss = std::stringstream{str};
+        auto ss = std::istringstream{str.substr(0, numberEnd)};
+        ss.imbue(std::locale::classic());
         if (not (ss >> ret)) {
-            throw std::runtime_error{std::string{"error parsing cli"}};
+            throw std::runtime_error{std::string{"not a valid floating-point number \""} + str + "\""};
         }
         // parse floats/doubles and convert if they are angles or have other suffices
-        if (not ss.eof()) {
-            auto ending = std::string{};
-            if (not (ss >> ending)) {
-                throw std::runtime_error{std::string{"invalid string \""} + str + "\""};
-            }
+        if (numberEnd < str.size()) {
+            auto ending = str.substr(numberEnd);
             if (ending.ends_with("rad")) {
                 ending = ending.substr(0, ending.size()-3);
             } else if (ending.ends_with("deg")) {

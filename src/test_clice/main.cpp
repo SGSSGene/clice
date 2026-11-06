@@ -398,6 +398,32 @@ TEST_CASE("check clice::Argument", "argument") {
         }
     }
 
+    SECTION("floats - exa suffix vs exponent") {
+        auto cliOpt1 = clice::Argument{ .args   = "--opt1",
+                                        .value  = std::vector<double>{}};
+
+        auto args = std::vector<std::string_view>{"app", "--opt1", "1E", "2Ei", "1.5E", "1E3", "1e3", "2E-3", "1E3k", "-.5E"};
+        clice::parse(args);
+        CHECK(cliOpt1);
+        auto expected = std::vector<double>{1e18, 2. * 1024 * 1024 * 1024 * 1024 * 1024 * 1024, 1.5e18, 1e3, 1e3, 2e-3, 1e6, -0.5e18};
+        REQUIRE(cliOpt1->size() == expected.size());
+        for (size_t i{0}; i < expected.size(); ++i) {
+            INFO(i);
+            CHECK(expected[i] == cliOpt1->at(i));
+        }
+    }
+
+    SECTION("floats - invalid values") {
+        auto cliOpt1 = clice::Argument{ .args   = "--opt1",
+                                        .value  = double{}};
+
+        for (auto v : {"abc", ".", "-", "E", "1Ex"}) {
+            INFO(v);
+            auto args = std::vector<std::string_view>{"app", "--opt1", v};
+            CHECK_THROWS(clice::parse(args));
+        }
+    }
+
     SECTION("arguments as children") {
         auto cliOptA = clice::Argument {
             .args = "--parent",
