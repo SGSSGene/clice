@@ -216,7 +216,36 @@ TEST_CASE("check clice::Argument", "argument") {
         auto args = std::vector<std::string_view>{"app", "--opt1", "-15"};
         clice::parse(args, /*.allowDashCombi=*/true);
         CHECK(cliOpt1);
-        CHECK(*cliOpt1 == std::vector<int>{});
+        CHECK(*cliOpt1 == std::vector<int>{-15});
+    }
+
+    SECTION("splitting arguments - combined flags") {
+        auto cliA = clice::Argument{ .args = "-a" };
+        auto cliB = clice::Argument{ .args = "-b" };
+
+        auto args = std::vector<std::string_view>{"app", "-ab"};
+        clice::parse(args, /*.allowDashCombi=*/true);
+        CHECK(cliA);
+        CHECK(cliB);
+    }
+
+    SECTION("splitting arguments - single dash option is not split") {
+        auto cliA      = clice::Argument{ .args = "-a" };
+        auto cliOption = clice::Argument{ .args = "-option" };
+
+        auto args = std::vector<std::string_view>{"app", "-option"};
+        clice::parse(args, /*.allowDashCombi=*/true);
+        CHECK(!cliA);
+        CHECK(cliOption);
+    }
+
+    SECTION("splitting arguments - unknown arguments are reported") {
+        auto cliA = clice::Argument{ .args = "-a" };
+
+        auto args = std::vector<std::string_view>{"app", "-axyz"};
+        CHECK_THROWS_WITH(clice::parse(args, /*.allowDashCombi=*/true),
+                          "unexpected cli argument \"-axyz\"");
+        CHECK(!cliA);
     }
 
     SECTION("splitting arguments - split args survive in unprocessedParameters") {

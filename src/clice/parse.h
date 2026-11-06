@@ -112,11 +112,16 @@ inline void parseSingleDash(std::span<std::string_view> _args, std::vector<std::
             };
             visitAllArguments(Register::getInstance().arguments);
 
-            // Only add if all arguments have been found
+            // Only split if all arguments have been found, otherwise pass the
+            // argument through unchanged (e.g. negative numbers like "-15",
+            // single dash options like "-option" or unknown arguments that
+            // should be reported by parse())
             if (foundArgs.size() == splitArgs.size()) {
                 for (size_t j{1}; j < view.size(); ++j) {
                     argview.emplace_back(singleDashArg(view[j]));
                 }
+            } else {
+                argview.emplace_back(view);
             }
         }
     }
