@@ -225,7 +225,7 @@ int main(int argc, char** argv) {
     try {
         clice::parse(argc, argv);
     } catch (...) {
-        std::cerr << "parsing failed: " << *failed << "\n";
+        std::cerr << "parsing failed" << "\n";
         return 1;
     }
 
