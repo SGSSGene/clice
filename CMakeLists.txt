@@ -16,7 +16,7 @@ if (${PROJECT_IS_TOP_LEVEL})
 endif ()
 
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:SGSSGene/cpmpack@1.1.1")
+CPMAddPackage("gh:SGSSGene/cpmpack@1.1.4")
 loadCPMPack("${CMAKE_CURRENT_SOURCE_DIR}/cpmpack.json")
 enable_testing()
 
