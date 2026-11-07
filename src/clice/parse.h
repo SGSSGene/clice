@@ -74,7 +74,7 @@ inline auto singleDashArg(char c) -> std::string_view {
         }
         return t;
     }();
-    return {table[static_cast<int>(c)].data(), 2};
+    return {table[static_cast<unsigned char>(c)].data(), 2};
 }
 
 inline void parseSingleDash(std::span<std::string_view> _args, std::vector<std::string_view>* unprocessedParameters) {
