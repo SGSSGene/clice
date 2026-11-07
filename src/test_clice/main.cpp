@@ -501,6 +501,30 @@ TEST_CASE("check clice::Argument", "argument") {
         CHECK_THROWS(parseFromString<uint64_t>("99999999999999999999"));
     }
 
+    SECTION("enums - parsed via underlying type") {
+        enum class EU8   : uint8_t { A = 0, B = 1, C = 255 };
+        enum class EI8   : int8_t  { M = -1, Z = 0 };
+        enum class EChar : char    { A = 0, B = 65 };
+        enum class EInt            { A = 0, B = 2 };
+        using clice::parseFromString;
+
+        CHECK(parseFromString<EU8>("1") == EU8::B);   // not '1' == 49
+        CHECK(parseFromString<EU8>("255") == EU8::C);
+        CHECK(parseFromString<EI8>("-1") == EI8::M);
+        CHECK(parseFromString<EChar>("65") == EChar::B);
+        CHECK(parseFromString<EInt>("0x2") == EInt::B);
+
+        CHECK_THROWS_WITH(parseFromString<EU8>("256"), "integer \"256\" out of range [0, 255]");
+        CHECK_THROWS(parseFromString<EU8>("-1"));
+        CHECK_THROWS(parseFromString<EChar>("A"));
+        CHECK_THROWS_WITH(parseFromString<EInt>("abc"), "not a valid integer \"abc\"");
+
+        auto cliEnum = clice::Argument{ .args = "--e", .value = EU8::A };
+        auto args = std::vector<std::string_view>{"app", "--e", "1"};
+        clice::parse(args);
+        CHECK(*cliEnum == EU8::B);
+    }
+
     SECTION("integers - range error through clice::Argument") {
         auto cliOpt1 = clice::Argument{ .args = "--n", .value = uint8_t{0} };
         auto args = std::vector<std::string_view>{"app", "--n", "300"};

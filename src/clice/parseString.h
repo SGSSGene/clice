@@ -181,13 +181,11 @@ auto parseFromString(std::string_view _str) -> T {
 
     } else if constexpr (std::is_enum_v<T>) {
         using UT = std::underlying_type_t<T>;
-        auto ret = UT{};
-        // parse everything else
-        auto ss = std::stringstream{str};
-        if (not (ss >> ret)) {
-            throw std::runtime_error{std::string{"error parsing cli"}};
-        }
-        return T(ret);
+        // For char as underlying type must fallback to int8_t and uint8_t to
+        // avoid parsing characters
+        using IntT = std::conditional_t<!std::is_same_v<UT, char>, UT,
+                     std::conditional_t<std::is_signed_v<char>, int8_t, uint8_t>>;
+        return static_cast<T>(parseFromString<IntT>(_str));
     } else if constexpr (std::floating_point<T>) {
         // remove potential ' separator
         str.erase(std::remove(str.begin(), str.end(), '\''), str.end());
