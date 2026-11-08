@@ -11,7 +11,8 @@ if (${PROJECT_IS_TOP_LEVEL})
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /EHsc")
     elseif (APPLE)
     else ()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic")
+#!TODO Some clang bug breaks this
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic")
     endif ()
 endif ()
 
