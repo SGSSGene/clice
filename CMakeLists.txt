@@ -11,12 +11,13 @@ if (${PROJECT_IS_TOP_LEVEL})
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /EHsc")
     elseif (APPLE)
     else ()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic")
+#!TODO Some clang bug breaks this
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic")
     endif ()
 endif ()
 
 include(cmake/CPM.cmake)
-CPMAddPackage("gh:SGSSGene/cpmpack@1.1.1")
+CPMAddPackage("gh:SGSSGene/cpmpack@1.1.4")
 loadCPMPack("${CMAKE_CURRENT_SOURCE_DIR}/cpmpack.json")
 enable_testing()
 

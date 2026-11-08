@@ -6,6 +6,7 @@
 #include "generateHelp.h"
 #include "printCompletion.h"
 
+#include <array>
 #include <cassert>
 #include <cstdlib>
 #include <fmt/format.h>
@@ -14,6 +15,7 @@
 #include <map>
 #include <set>
 #include <span>
+#include <unordered_set>
 
 namespace clice {
 
@@ -57,11 +59,25 @@ inline void makeCompletionSuggestion(std::vector<ArgumentBase*> const& activeBas
 }
 }
 
-auto parse(int argc, char const* const* argv, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr) -> std::optional<std::string>;
-auto parse(std::span<std::string_view> args, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr) -> std::optional<std::string>;
+void parse(int argc, char const* const* argv, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr);;
+void parse(std::span<std::string_view> args, bool allowDashCombi = false, std::vector<std::string_view>* unprocessedParameters = nullptr);
 
-inline auto parseSingleDash(std::span<std::string_view> _args, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
-    auto args   = std::list<std::string>{};
+// A fixed/static list of all -a...-z -A....-Z and all other variant -\0 -\n -@ etc.
+// This can be used to return a single dash variable;
+// Returns a view onto a static "-c" string. The view stays valid for the
+// lifetime of the program, so it can safely end up in unprocessedParameters.
+inline auto singleDashArg(char c) -> std::string_view {
+    static auto const table = [] {
+        auto t = std::array<std::array<char, 2>, 256>{};
+        for (size_t i{0}; i < t.size(); ++i) {
+            t[i] = {'-', static_cast<char>(i)};
+        }
+        return t;
+    }();
+    return {table[static_cast<unsigned char>(c)].data(), 2};
+}
+
+inline void parseSingleDash(std::span<std::string_view> _args, std::vector<std::string_view>* unprocessedParameters) {
     auto argview = std::vector<std::string_view>{};
     bool allTrailing{false};
     for (size_t i{0}; i < _args.size(); ++i) {
@@ -97,27 +113,36 @@ inline auto parseSingleDash(std::span<std::string_view> _args, std::vector<std::
             };
             visitAllArguments(Register::getInstance().arguments);
 
-            // Only add if all arguments have been found
+            // Only split if all arguments have been found, otherwise pass the
+            // argument through unchanged (e.g. negative numbers like "-15",
+            // single dash options like "-option" or unknown arguments that
+            // should be reported by parse())
             if (foundArgs.size() == splitArgs.size()) {
                 for (size_t j{1}; j < view.size(); ++j) {
-                    auto a = std::string{"-"} + view[j];
-                    args.push_back(std::move(a));
-                    argview.emplace_back(args.back());
+                    argview.emplace_back(singleDashArg(view[j]));
                 }
+            } else {
+                argview.emplace_back(view);
             }
         }
     }
-    return parse(argview, false, unprocessedParameters);
+    parse(argview, false, unprocessedParameters);
 }
 
-inline auto parseSingleDash(int _argc, char const* const* _argv, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
+inline void parseSingleDash(int _argc, char const* const* _argv, std::vector<std::string_view>* unprocessedParameters) {
     auto args = std::vector<std::string_view>{};
     for (int i{0}; i < _argc; ++i) {
         args.emplace_back(_argv[i]);
     }
-    return parseSingleDash(args, unprocessedParameters);
+    parseSingleDash(args, unprocessedParameters);
 }
 
+
+// a flag is an argument without a value type (it never accepts values)
+// which is indicated by its value type being set to std::nullptr_t
+inline auto isFlag(ArgumentBase const& arg) -> bool {
+    return arg.type_index == std::type_index(typeid(std::nullptr_t));
+}
 
 // creates a string like "-i, --input"
 inline auto createParameterStrList(std::vector<std::string> const& args) -> std::string {
@@ -137,9 +162,10 @@ inline auto createParameterStrList(std::vector<std::string> const& args) -> std:
  * allowDashCombi: allows flags like "-a -b" be combined to "-ab"
  */
 
-inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
+inline void parse(std::span<std::string_view> args, bool allowDashCombi, std::vector<std::string_view>* unprocessedParameters) {
     if (allowDashCombi) {
-        return parseSingleDash(args, unprocessedParameters);
+        parseSingleDash(args, unprocessedParameters);
+        return;
     }
     assert(args.size() > 0);
 
@@ -163,6 +189,10 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
         exit(0);
     }
 
+    // arguments that received their value through an environment variable
+    // (they count as given, e.g. when checking "required" arguments)
+    auto setByEnv = std::unordered_set<ArgumentBase const*>{};
+
     // check environment variables first
     {
         using CB = std::function<void(ArgumentBase&, std::string)>;
@@ -176,10 +206,29 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
             }
         };
         visitAllArguments(Register::getInstance().arguments, [&](ArgumentBase& arg, std::string env) {
-            if (auto ptr = std::getenv(env.c_str()); ptr) {
-                arg.init();
-                arg.fromString(std::string_view{ptr});
+            auto ptr = std::getenv(env.c_str());
+            if (!ptr) return;
+            auto value = std::string_view{ptr};
+            if (isFlag(arg)) {
+                // flags take no value: an empty or true-like value sets the flag,
+                // a false-like value ("0", "false", "no") leaves it unset
+                auto isTrue = value.empty();
+                if (!isTrue) {
+                    try {
+                        isTrue = parseFromString<bool>(value);
+                    } catch (std::exception const& e) {
+                        throw std::runtime_error{"environment variable " + env + ": " + e.what()};
+                    }
+                }
+                if (isTrue) {
+                    arg.init();
+                    setByEnv.insert(&arg);
+                }
+                return;
             }
+            arg.init();
+            arg.fromString(value);
+            setByEnv.insert(&arg);
         });
     }
 
@@ -256,7 +305,7 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
             for (size_t j{0}; j < activeBases.size(); ++j) {
                 auto const& base = activeBases[activeBases.size()-j-1];
                 for (auto arg : base->children) {
-                    if (arg->args.empty() && arg->init) {
+                    if (arg->args.empty() && !isFlag(*arg) && arg->init) {
                         arg->init();
                         if (!arg->tags.contains("multi")) arg->init = nullptr;
                         activeBases.push_back(arg);
@@ -268,7 +317,7 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
 
             // second check root arguments
             for (auto arg : Register::getInstance().arguments) {
-                if (arg->args.empty()) {
+                if (arg->args.empty() && !isFlag(*arg)) {
                     if (arg->init) {
                         arg->init();
                         if (!arg->tags.contains("multi")) arg->init = nullptr;
@@ -337,6 +386,12 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
         }
     }
 
+    // an argument counts as given, if it was given on the command line or via environment variable
+    auto isGiven = [&](ArgumentBase const* arg) {
+        return std::ranges::find(activeBases, arg) != activeBases.end()
+            || setByEnv.contains(arg);
+    };
+
     // check if all active arguments got parameters
     for (size_t j{0}; j < activeBases.size(); ++j) {
         auto const& base = activeBases[activeBases.size()-j-1];
@@ -346,7 +401,7 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
         }
         for (auto child : base->children) {
             if (child->tags.contains("required")) {
-                if (std::ranges::find(activeBases, child) == activeBases.end()) {
+                if (!isGiven(child)) {
                     auto option = createParameterStrList(base->args);
                     auto suboption = createParameterStrList(child->args);
                     throw std::runtime_error{"option " + child->id + "\"" + suboption + "\" is required (enforced by \"" + option + "\")"};
@@ -358,7 +413,7 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
     // check if all top level arguments got parameters
     for (auto base : Register::getInstance().arguments) {
         if (base->tags.contains("required")) {
-            if (std::ranges::find(activeBases, base) == activeBases.end()) {
+            if (!isGiven(base)) {
                 auto option = createParameterStrList(base->args);
                 throw std::runtime_error{"option " + base->id + " \"" + option + "\" is a required parameter"};
             }
@@ -374,8 +429,6 @@ inline auto parse(std::span<std::string_view> args, bool allowDashCombi, std::ve
             }
         }
     }
-
-    return std::nullopt;
 }
 
 struct Parse {
@@ -387,22 +440,19 @@ struct Parse {
     std::function<void()> run{}; // function to run
     std::vector<std::string_view>* unprocessedParameters{};
 };
-inline auto parse(int argc, char const* const* argv, bool allowDashCombi, std::vector<std::string_view>* unprocessedParameters) -> std::optional<std::string> {
+inline void parse(int argc, char const* const* argv, bool allowDashCombi, std::vector<std::string_view>* unprocessedParameters) {
     auto args = std::vector<std::string_view>{};
     for (int i{0}; i < argc; ++i) {
         args.emplace_back(argv[i]);
     }
-    return parse(args, allowDashCombi, unprocessedParameters);
+    parse(args, allowDashCombi, unprocessedParameters);
 }
 
 
 inline void parse(Parse const& parse) {
     auto f = [&]() {
         auto [argc, argv] = parse.args;
-        if (auto failed = clice::parse(argc, argv, parse.allowDashCombi, parse.unprocessedParameters); failed) {
-            std::cerr << "parsing failed: " << *failed << "\n";
-            std::exit(1);
-        }
+        clice::parse(argc, argv, parse.allowDashCombi, parse.unprocessedParameters);
 
         if (parse.run) {
             parse.run();

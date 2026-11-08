@@ -245,6 +245,10 @@ struct Argument {
                         desc.cb(*desc);
                         arg.isInit = true;
                     };
+                } else {
+                    []<bool cb_signature_valid = false> {
+                        static_assert(cb_signature_valid, "clice::Argument: .cb must be callable as cb() or as cb(value) (for arguments with a .value)");
+                    }();
                 }
                 arg.cb_priority = desc.cb_priority;
                 if constexpr (std::same_as<std::nullptr_t, T>) {

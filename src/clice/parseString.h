@@ -3,11 +3,16 @@
 #pragma once
 
 #include <algorithm>
+#include <charconv>
+#include <cstdint>
 #include <filesystem>
+#include <limits>
+#include <locale>
 #include <numbers>
 #include <optional>
 #include <ranges>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -109,65 +114,122 @@ auto parseFromString(std::string_view _str) -> T {
         return _str[0];
     } else if constexpr (std::numeric_limits<T>::is_exact) {
         // parse all integer-like types
-        auto ret = T{};
+        // Format: [+-][0x|0b]digits[suffix], digits may be separated by '
+        // Numbers are decimal by default (leading zeros do not mean octal).
 
         // remove potential ' separator
         str.erase(std::remove(str.begin(), str.end(), '\''), str.end());
 
-        auto base = int{0};
-        char const* strBegin = str.data();
-        char const* strEnd   = str.data() + str.size();
-        std::size_t nextIdx=0;
-        if (str.find("0b") == 0) {
+        auto outOfRange = [&]() {
+            return std::runtime_error{"integer \"" + str + "\" out of range ["
+                                      + std::to_string(std::numeric_limits<T>::min()) + ", "
+                                      + std::to_string(std::numeric_limits<T>::max()) + "]"};
+        };
+
+        char const* iter = str.data();
+        char const* end  = str.data() + str.size();
+
+        bool negative = false;
+        if (iter != end && (*iter == '+' || *iter == '-')) {
+            negative = (*iter == '-');
+            ++iter;
+        }
+        auto base = int{10};
+        if (end - iter >= 2 && iter[0] == '0' && (iter[1] == 'x' || iter[1] == 'X')) {
+            base = 16;
+            iter += 2;
+        } else if (end - iter >= 2 && iter[0] == '0' && (iter[1] == 'b' || iter[1] == 'B')) {
             base = 2;
-            strBegin += 2;
+            iter += 2;
         }
-        try {
-            if constexpr (std::is_unsigned_v<T>) {
-                ret = std::stoull(strBegin, &nextIdx, base);
-            } else {
-                ret = std::stoll(strBegin, &nextIdx, base);
-            }
-        } catch (std::invalid_argument const&) {
-            throw std::runtime_error{std::string{"not a valid integer \""} + str + "\""};
+
+        // parse the magnitude (without sign)
+        auto magnitude = uint64_t{};
+        auto [ptr, ec] = std::from_chars(iter, end, magnitude, base);
+        if (ec == std::errc::invalid_argument) {
+            throw std::runtime_error{"not a valid integer \"" + str + "\""};
+        } else if (ec == std::errc::result_out_of_range) {
+            throw outOfRange();
         }
+
         // if we didn't parse everything check if it has some known suffix
-        if (static_cast<int>(nextIdx) != strEnd - strBegin) {
-            if constexpr (not std::is_same_v<bool, T>) {
-                auto suffix = std::string_view{strBegin + nextIdx};
-                auto value = parseSuffix<T>(suffix);
-                if (not value) {
-                    throw std::runtime_error{std::string{"unknown integer suffix \""} + str + "\""};
-                }
-                ret *= value.value();
+        if (ptr != end) {
+            auto factor = parseSuffix<uint64_t>(std::string_view{ptr, end});
+            if (!factor) {
+                throw std::runtime_error{"unknown integer suffix \"" + str + "\""};
             }
+            if (magnitude > std::numeric_limits<uint64_t>::max() / *factor) {
+                throw outOfRange();
+            }
+            magnitude *= *factor;
         }
-        return ret;
+
+        // apply sign and check if it fits into T
+        auto maxValue = static_cast<uint64_t>(std::numeric_limits<T>::max());
+        if (!negative) {
+            if (magnitude > maxValue) throw outOfRange();
+            return static_cast<T>(magnitude);
+        }
+        if (magnitude == 0) return T{};
+        if constexpr (std::is_unsigned_v<T>) {
+            throw outOfRange();
+        } else {
+            // |min| == max + 1 (two's complement)
+            if (magnitude > maxValue + 1) throw outOfRange();
+            return static_cast<T>(-static_cast<T>(magnitude - 1) - 1);
+        }
 
     } else if constexpr (std::is_enum_v<T>) {
         using UT = std::underlying_type_t<T>;
-        auto ret = UT{};
-        // parse everything else
-        auto ss = std::stringstream{str};
-        if (not (ss >> ret)) {
-            throw std::runtime_error{std::string{"error parsing cli"}};
-        }
-        return T(ret);
+        // For char as underlying type must fallback to int8_t and uint8_t to
+        // avoid parsing characters
+        using IntT = std::conditional_t<!std::is_same_v<UT, char>, UT,
+                     std::conditional_t<std::is_signed_v<char>, int8_t, uint8_t>>;
+        return static_cast<T>(parseFromString<IntT>(_str));
     } else if constexpr (std::floating_point<T>) {
         // remove potential ' separator
         str.erase(std::remove(str.begin(), str.end(), '\''), str.end());
 
+        // Find the end of the numeric part: [+-]digits[.digits][(e|E)[+-]digits]
+        // The exponent is only part of the number if digits follow, otherwise
+        // 'E' is the exa suffix (e.g. "1E" or "1Ei").
+        auto numberEnd = [&]() -> size_t {
+            auto isDigit = [&](size_t i) {
+                return i < str.size() && str[i] >= '0' && str[i] <= '9';
+            };
+            auto isSign = [&](size_t i) {
+                return i < str.size() && (str[i] == '+' || str[i] == '-');
+            };
+            size_t i{0};
+            size_t digitCount{0};
+            if (isSign(i)) ++i;
+            for (; isDigit(i); ++i) ++digitCount;
+            if (i < str.size() && str[i] == '.') {
+                ++i;
+                for (; isDigit(i); ++i) ++digitCount;
+            }
+            if (digitCount == 0) {
+                throw std::runtime_error{std::string{"not a valid floating-point number \""} + str + "\""};
+            }
+            if (i < str.size() && (str[i] == 'e' || str[i] == 'E')) {
+                auto j = i+1;
+                if (isSign(j)) ++j;
+                if (isDigit(j)) {
+                    for (i = j; isDigit(i); ++i) {}
+                }
+            }
+            return i;
+        }();
+
         auto ret = T{};
-        auto ss = std::stringstream{str};
+        auto ss = std::istringstream{str.substr(0, numberEnd)};
+        ss.imbue(std::locale::classic());
         if (not (ss >> ret)) {
-            throw std::runtime_error{std::string{"error parsing cli"}};
+            throw std::runtime_error{std::string{"not a valid floating-point number \""} + str + "\""};
         }
         // parse floats/doubles and convert if they are angles or have other suffices
-        if (not ss.eof()) {
-            auto ending = std::string{};
-            if (not (ss >> ending)) {
-                throw std::runtime_error{std::string{"invalid string \""} + str + "\""};
-            }
+        if (numberEnd < str.size()) {
+            auto ending = str.substr(numberEnd);
             if (ending.ends_with("rad")) {
                 ending = ending.substr(0, ending.size()-3);
             } else if (ending.ends_with("deg")) {

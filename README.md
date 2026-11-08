@@ -222,8 +222,10 @@ auto cliRequired = clice::Argument {
 };
 
 int main(int argc, char** argv) {
-    if (auto failed = clice::parse(argc, argv); failed) {
-        std::cerr << "parsing failed: " << *failed << "\n";
+    try {
+        clice::parse(argc, argv);
+    } catch (...) {
+        std::cerr << "parsing failed" << "\n";
         return 1;
     }
 

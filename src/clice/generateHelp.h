@@ -129,12 +129,24 @@ inline auto generateSplitSynopsis() -> std::tuple<size_t, std::string> {
         ret = fmt::format("{} {}\n", argv0, ret);
         ct += 1;
     }
+    // find all required parts
+    auto requiredPart = std::string{};
     for (auto arg : bases) {
         auto s = generatePartialSynopsis(*arg);
-        assert(s.size() >= 2);
-        s.pop_back();
-        s.erase(s.begin());
-        ret = fmt::format("{}{} {}\n", ret, argv0, s);
+        if (s.size() > 0 && s[0] != '[') {
+            requiredPart = fmt::format("{}{} ", requiredPart, s);
+        }
+    }
+
+    for (auto arg : bases) {
+        auto s = generatePartialSynopsis(*arg);
+        if (s.size() > 1 && s[0] == '[') {
+            s.pop_back();
+            s.erase(s.begin());
+            ret = fmt::format("{}{} {}{}\n", ret, argv0, requiredPart, s);
+        } else {
+            ret = fmt::format("{}{} {}\n", ret, argv0, s);
+        }
         ct += 1;
     }
     return {ct, ret};
